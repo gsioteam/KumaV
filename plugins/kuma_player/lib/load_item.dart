@@ -41,6 +41,7 @@ class LoadItem {
     return _testData[idx];
   }
 
+  int get size =>  _proxyItem.server.cacheManager.getSize(cacheKey);
   List<int> readSync() => _proxyItem.server.cacheManager.loadSync(cacheKey);
 
   Stream<List<int>> read([int start = 0, int end = -1]) async* {
@@ -61,7 +62,9 @@ class LoadItem {
 
     RequestItem item = _requestItemBuilder();
     if (item.method.toUpperCase() == "HEAD") {
+      print("REQ: ${item.url}");
       var response = await item.getResponse();
+      print("headers: ${response.headers}");
       String json = jsonEncode(response.headers);
       List<int> buf = utf8.encode(json);
       yield buf;
@@ -90,6 +93,7 @@ class LoadItem {
   }
 
   void clear() {
+    _loaded = false;
     if (_proxyItem.server.cacheManager.contains(this.cacheKey)) {
       _proxyItem.server.cacheManager.remove(this.cacheKey);
     }

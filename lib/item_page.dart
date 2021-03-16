@@ -34,6 +34,7 @@ import 'widgets/video_widget.dart';
 import 'localizations/localizations.dart';
 import 'utils/favorites_manager.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'utils/video_load_item.dart';
 // import 'package:flutter_anywhere_menus/flutter_anywhere_menus.dart';
 
 const double MINI_SIZE = 68;
@@ -44,143 +45,6 @@ enum ItemPageStatus {
   InPage,
   SmallWindow,
   Hidden
-}
-
-class VideoLoadData {
-  int index;
-  VideoLoadItem loadItem;
-  String name;
-
-  Future<String> load() async {
-    var data = loadItem.context.data[index].data;
-    if (data is GMap) {
-      var url = data["url"];
-      if (url is String && Uri.tryParse(url)?.hasScheme == true) {
-        return url;
-      } else {
-        var handler = data["handler"];
-        if (handler is String) {
-          Completer<String> completer = Completer();
-          Callback success = Callback.fromFunction((String url) {
-            print("C $url");
-            completer.complete(url);
-          });
-          Callback failed = Callback.fromFunction((String msg) {
-            print("E $msg");
-            completer.completeError(new Exception(msg));
-          });
-          data.control();
-          loadItem.context.applyFunction(handler, Array.allocate([
-            data,
-            success,
-            failed
-          ]).release());
-          try {
-            String url = await completer.future;
-            data["url"] = url;
-            loadItem.context.saveData();
-            data.release();
-            success.release();
-            failed.release();
-            return url;
-          } catch (e) {
-            data.release();
-            success.release();
-            failed.release();
-            throw e;
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  DataItem get dataItem {
-    return loadItem.context.data[index];
-  }
-}
-
-class VideoLoadItem {
-  Context context;
-  void Function(List<VideoLoadData> datas, int index) onComplete;
-  void Function(Error error) onError;
-  bool loading = false;
-  bool readCache;
-  String videoUrl;
-
-  VideoLoadItem(this.context, {
-    this.onComplete,
-    this.onError,
-    this.readCache = true,
-    this.videoUrl,
-  }) {
-    context.control();
-    context.onReloadComplete = Callback.fromFunction(_onReloadComplete).release();
-    context.onDataChanged = Callback.fromFunction(_onDataChange).release();
-    context.onLoadingStatus = Callback.fromFunction(_onLoadStates).release();
-    context.enterView();
-    if (context != null) {
-      if (readCache) {
-        Array data = context.data;
-        if (!_processData(data) && !loading) {
-          context.reload();
-        }
-      } else {
-        context.reload();
-      }
-    }
-  }
-
-  void finish() {
-    if (context == null) return;
-    context.onDataChanged = null;
-    context.onReloadComplete = null;
-    context.onLoadingStatus = null;
-    context.exitView();
-    context.release();
-    context = null;
-  }
-
-  void _onDataChange(int type, Array data, int idx) {}
-
-  void _onLoadStates(bool loading) {
-    this.loading = loading;
-  }
-
-  void _onReloadComplete() {
-    Array data = context.data;
-    if (!_processData(data)) {
-      onError?.call(StateError("no_state"));
-    }
-  }
-
-  bool _processData(Array data) {
-    if (data != null && data.length > 0) {
-      List<VideoLoadData> datas = [];
-      int index;
-      for (int i = 0, t = data.length; i < t; ++i) {
-        DataItem dataItem = data[i];
-        String url;
-        var infoData = dataItem.data;
-        if (infoData is GMap) {
-          url = infoData["url"];
-        }
-        if (videoUrl != null && videoUrl == url)
-          index = i;
-        datas.add(
-            VideoLoadData()
-              ..index = i
-              ..name = dataItem.title
-              ..loadItem = this
-        );
-      }
-      onComplete?.call(datas, index);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
 }
 
 enum SortType {
@@ -482,11 +346,11 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
 
   Future<_ProcessResult> _loadDownloadIndex(DataItem dataItem) async {
     Completer<_ProcessResult> completer = Completer();
-    Context context = project.createCollectionContext(VIDEO_INDEX, dataItem);
     var temp = _ProcessResult();
     String key = "${dataItem.projectKey}:${dataItem.link}";
     temp.loader = VideoLoadItem(
-      context,
+      dataItem,
+      project,
       onComplete: (items, idx) {
         String str = KeyValue.get("$video_select_key:$key");
         int idx = int.tryParse(str) ?? 0;
@@ -1399,13 +1263,13 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
   void _readVideoAndPlay(DataItem dataItem) async {
     String link = dataItem.link;
     KeyValue.set(lastChapterKey, link);
-    Context context = project.createCollectionContext(VIDEO_INDEX, dataItem);
     loadItem?.finish();
     setState(() {
       videoData = null;
     });
     loadItem = VideoLoadItem(
-      context,
+      dataItem,
+      project,
       videoUrl: initialVideoUrl,
       onComplete: (items, idx) {
         setState(() {

@@ -8,6 +8,7 @@ import 'package:glib/main/project.dart';
 import 'package:kuma_player/video_downloader.dart';
 import 'package:kumav/configs.dart';
 import 'package:kumav/utils/video_notification.dart';
+import 'package:kumav/widgets/spin_itim.dart';
 import 'utils/download_manager.dart';
 import 'localizations/localizations.dart';
 import 'widgets/better_snack_bar.dart';
@@ -54,30 +55,108 @@ class ChapterCell extends StatefulWidget {
 
 class _ChapterCellState extends State<ChapterCell> {
   String errorStr;
+  bool isReloading = false;
 
-  Widget controlButton(DownloadQueueItem queueItem) {
+  List<Widget> controlButton(DownloadQueueItem queueItem) {
+    const double buttonSize = 24;
     if (queueItem.isDownloading) {
-      return IconButton(
-          icon: Icon(Icons.pause),
-          onPressed: () {
-            setState(() {
-              queueItem.stop();
-            });
-          }
-      );
+      return [IconButton(
+        icon: Container(
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(buttonSize/2)),
+            border: Border.all(
+              color: Colors.black45,
+              width: 2,
+            )
+          ),
+          child: Icon(Icons.pause, color: Colors.black45, size: 16),
+        ),
+        onPressed: () {
+          setState(() {
+            queueItem.stop();
+          });
+        }
+      )];
+    } else if (isReloading) {
+      return [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: SpinItem(
+            animated: true,
+            child: Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(buttonSize/2)),
+                border: Border.all(
+                  color: Colors.black45,
+                  width: 2,
+                )
+              ),
+              child: Icon(Icons.cached, color: Colors.black45, size: 16,),
+            ),
+          ),
+        )
+      ];
     } else {
       if (queueItem.state == DownloadState.Complete) {
-        return null;
+        return [];
       } else {
-        return IconButton(
-            icon: Icon(Icons.play_arrow),
+        List<Widget> children = [];
+        if (queueItem.canReload) {
+          children.add(
+            IconButton(
+              icon: Container(
+                width: buttonSize,
+                height: buttonSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(buttonSize/2)),
+                  border: Border.all(
+                    color: Colors.black45,
+                    width: 2,
+                  )
+                ),
+                child: Icon(Icons.cached, color: Colors.black45, size: 16,),
+              ),
+              onPressed: () async {
+                setState(() {
+                  errorStr = null;
+                  isReloading = true;
+                });
+                await queueItem.reload();
+                setState(() {
+                  isReloading = false;
+                  queueItem.start();
+                });
+              },
+            )
+          );
+        }
+        children.add(
+          IconButton(
+            icon: Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(buttonSize/2)),
+                border: Border.all(
+                  color: Colors.black45,
+                  width: 2,
+                )
+              ),
+              child: Icon(Icons.play_arrow, color: Colors.black45, size: 16,),
+            ),
             onPressed: () {
               setState(() {
                 errorStr = null;
                 queueItem.start();
               });
             }
+          )
         );
+        return children;
       }
     }
   }
@@ -91,14 +170,12 @@ class _ChapterCellState extends State<ChapterCell> {
         },
       );
     } else {
+      List<Widget> children = [];
+      children.addAll(controlButton(queueItem));
+      children.add(Icon(Icons.chevron_right));
       return Row(
         mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            child: controlButton(queueItem),
-          ),
-          Icon(Icons.chevron_right)
-        ],
+        children: children,
       );
     }
 
@@ -121,10 +198,19 @@ class _ChapterCellState extends State<ChapterCell> {
     return "";
   }
 
+  String sizeString(int size) {
+    double ret = size / 1024.0;
+    String unit = 'KB';
+    if (ret > 1024) {
+      ret = ret / 1024;
+      unit = 'MB';
+    }
+    return "${ret.toStringAsFixed(2)}$unit";
+  }
+
   @override
   Widget build(BuildContext context) {
     DownloadQueueItem queueItem = widget.item;
-    DataItem item = queueItem.item;
     ThemeData theme = Theme.of(context);
     return Column(
       children: [
@@ -133,18 +219,26 @@ class _ChapterCellState extends State<ChapterCell> {
           padding: EdgeInsets.only(left: 10, right: 10),
           child: ListTile(
             title: Text(queueItem.info.displayTitle),
-            subtitle: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  constraints: BoxConstraints(
-                    minWidth: 40,
+            subtitle: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: "(${(queueItem.progress * 100).toStringAsFixed(2)}%)",
+                    style: theme.textTheme.caption,
                   ),
-                  child: Text("(${(queueItem.progress * 100).toStringAsFixed(2)}%)", style: theme.textTheme.caption,),
-                  margin: EdgeInsets.only(right: 6),
-                ),
-                Text(stateString(queueItem), style: theme.textTheme.caption,)
-              ],
+                  TextSpan(
+                    text: " ${sizeString(queueItem.size)}",
+                    style: theme.textTheme.caption,
+                  ),
+                  WidgetSpan(
+                    child: Padding(padding: EdgeInsets.only(right: 8))
+                  ),
+                  TextSpan(
+                    text: stateString(queueItem),
+                    style: theme.textTheme.caption,
+                  )
+                ]
+              )
             ),
             trailing: extendButtons(context, queueItem),
             onTap: widget.onTap,
@@ -263,8 +357,7 @@ class _DownloadPageState extends State<DownloadPage> {
         DownloadQueueItem queueItem = cdata.data;
         DataItem item = queueItem.item;
         Project project = Project.allocate(item.projectKey).release();
-        DataItem detailItem = DataItem();
-        detailItem.allocate([]);
+        DataItem detailItem = DataItem.allocate();
         var info = queueItem.info;
         detailItem.link = info.link;
         detailItem.title = info.title;

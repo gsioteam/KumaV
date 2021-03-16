@@ -542,6 +542,7 @@ class _NavigationBarState extends State<NavigationBar> {
       elevation: 0,
       actions: widget.controller.buildActions(context, onReload),
       backgroundColor: Theme.of(context).primaryColorDark,
+      brightness: Brightness.dark,
     );
   }
 

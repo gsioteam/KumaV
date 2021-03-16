@@ -15,7 +15,7 @@ class DataItem extends Base {
 
   static reg() {
     Base.reg(DataItem, "gs::DataItem", Base)
-        ..constructor = ((id)=>DataItem().setID(id));
+        ..constructor = ((id)=>DataItem._().setID(id));
   }
 
   String get title => call("getTitle");
@@ -80,4 +80,9 @@ class DataItem extends Base {
 
   static String toJSON(Array items) => Base.s_call(DataItem, "toJSON", argv: [items]);
   static Array fromJSON(String json) => Base.s_call(DataItem, "fromJSON", argv: [json]);
+
+  DataItem._();
+  DataItem.allocate() {
+    super.allocate([]);
+  }
 }

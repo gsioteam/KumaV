@@ -10,7 +10,9 @@ enum SettingItemType {
   Switch,
   Input,
   Options,
-  Customer
+  Customer,
+  Label,
+  Button,
 }
 
 typedef ValueChangedCallback = void Function(dynamic);
@@ -86,6 +88,18 @@ class _SettingsListState extends State<SettingsList> {
           }
         );
       }
+      case SettingItemType.Label: {
+        return Text(item.value);
+      }
+      case SettingItemType.Button: {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(item.value),
+            Icon(Icons.chevron_right)
+          ],
+        );
+      }
       default: return null;
     }
   }
@@ -152,6 +166,12 @@ class _SettingsListState extends State<SettingsList> {
       }
       case SettingItemType.Customer: {
         return item.data;
+      }
+      case SettingItemType.Label: {
+        return buildStyle1(item);
+      }
+      case SettingItemType.Button: {
+        return buildStyle1(item, item.data);
       }
       default: return null;
     }

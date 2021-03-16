@@ -134,6 +134,7 @@ gc::Array DataItem::getSubItems() const {
 Ref<CollectionData> DataItem::saveToCollection(const std::string &type, const gc::Variant &data) {
     string key = getProjectKey() + ":" + getLink();
     Ref<CollectionData> col = CollectionData::find(type, key);
+    bool save = false;
     if (!col) {
         Ref<BookData> d = saveData(true);
         if (d->getIdentifier() < 0) {
@@ -143,12 +144,15 @@ Ref<CollectionData> DataItem::saveToCollection(const std::string &type, const gc
         col->setType(type);
         col->setKey(key);
         col->setTargetID(d->getIdentifier());
-        if (data) {
-            nlohmann::json json = JSON::serialize(data);
-            col->setData(json.dump());
-        }
-        col->save();
+        save = true;
     }
+    if (data) {
+        nlohmann::json json = JSON::serialize(data);
+        col->setData(json.dump());
+        save = true;
+    }
+    if (save)
+        col->save();
     return col;
 }
 

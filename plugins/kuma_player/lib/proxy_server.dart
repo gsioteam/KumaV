@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart' as platform;
 import 'package:mime/mime.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math' as math;
+import 'package:path/path.dart' as path;
 
 String _calculateKey(String url) {
   var hash = crypto.sha256.convert(utf8.encode(url));
@@ -92,9 +93,9 @@ abstract class ProxyItem {
     if (index < 0) {
       throw "Wrong url $_url";
     }
-    _entry = url.substring(index + 1);
-    _base = url.substring(0, index + 1);
     _url = Uri.parse(url);
+    _entry = path.basename(_url.path);
+    _base = url.substring(0, index + 1);
     _key = _calculateKey(url);
     _files[entry] = _ProxyData(url);
 
@@ -429,13 +430,22 @@ class HlsProxyItem extends ProxyItem {
     }
   }
 
+  bool _isM3u8(List<int> buf) {
+    try {
+      return buf.length > 7 && utf8.decode(buf.sublist(0, 7)) == '#EXTM3U';
+    } catch (e) {
+      return false;
+    }
+  }
+
   void checkBuffered() {
     for (int i = 0; i < _loadItems.length; ++i) {
       var item = _loadItems[i];
       if (item.loaded) {
         String ext = p.extension(item.cacheKey)?.toLowerCase();
-        if (ext == ".m3u8") {
-          parseHls(Uri.parse(item.data), utf8.decode(item.readSync()));
+        var buf = item.readSync();
+        if (ext == '.m3u8' || _isM3u8(buf)) {
+          parseHls(Uri.parse(item.data), utf8.decode(buf));
         }
       }
     }
@@ -444,7 +454,7 @@ class HlsProxyItem extends ProxyItem {
   @override
   void processBuffer(LoadItem item, List<int> buffer) {
     String ext = p.extension(item.cacheKey)?.toLowerCase();
-    if (ext == ".m3u8") {
+    if (ext == '.m3u8' || _isM3u8(buffer)) {
       parseHls(Uri.parse(item.data), utf8.decode(buffer));
     }
   }
@@ -507,6 +517,11 @@ class SingleProxyItem extends ProxyItem {
       String str = await utf8.decodeStream(stream);
       Map<String, dynamic> headers = jsonDecode(str);
       contentLength = int.parse(headers["content-length"]);
+      if (contentLength <= 0) {
+        contentLength = null;
+        item.clear();
+        throw Exception("Wrong content length!");
+      }
       canSeek = headers.containsKey("accept-ranges");
 
       int total = (contentLength / BLOCK_LENGTH).floor();
@@ -582,6 +597,11 @@ class SingleProxyItem extends ProxyItem {
             String str = utf8.decode(item.readSync());
             Map<String, dynamic> headers = jsonDecode(str);
             contentLength = int.parse(headers["content-length"]);
+            if (contentLength == 0) {
+              item.clear();
+              contentLength = null;
+              throw Exception("Empty content-length.");
+            }
             canSeek = headers.containsKey("accept-ranges");
 
             int total = (contentLength / BLOCK_LENGTH).floor();
@@ -607,7 +627,11 @@ class SingleProxyItem extends ProxyItem {
       Map<String, dynamic> headers = jsonDecode(utf8.decode(buffer));
       contentLength = int.parse(headers["content-length"]);
       canSeek = headers.containsKey("accept-ranges");
-
+      if (contentLength == 0) {
+        item.clear();
+        contentLength = null;
+        throw Exception("Empty content-length.");
+      }
 
       int total = (contentLength / BLOCK_LENGTH).floor();
       if (contentLength % BLOCK_LENGTH != 0) total++;
@@ -659,7 +683,9 @@ class ProxyServer {
   }
 
   Future<void> setup() async {
-    dir = await platform.getApplicationSupportDirectory();
+    dir = await platform.getTemporaryDirectory();
+    dir = Directory(dir.path + '/video');
+    if (!dir.existsSync()) dir.createSync();
     cacheManager = CacheManager(dir);
 
     _server = await HttpMultiServer.loopback(0);

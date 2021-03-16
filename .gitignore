@@ -45,3 +45,4 @@ app.*.map.json
 classes/
 .cxx
 plugins/glib/ios/lib
+android/app/release

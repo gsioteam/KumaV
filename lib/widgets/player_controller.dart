@@ -230,45 +230,44 @@ class PauseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: type == PauseButtonType.Loading ? null : onPressed,
-      child: _icon(),
-    );
+    if (PauseButtonType.Loading == type) {
+      return SpinKitRing(
+        size: 56,
+        color: Colors.white,
+      );
+    } else {
+      return Container(
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.white, width: 3),
+            shape: BoxShape.circle
+        ),
+        padding: EdgeInsets.all(0),
+        child: _icon(),
+      );
+    }
   }
 
   Widget _icon() {
     switch (type) {
       case PauseButtonType.Playing:
-        return Container(
-          decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 3),
-              shape: BoxShape.circle
-          ),
-          padding: EdgeInsets.all(8),
-          child: Icon(
+        return IconButton(
+          onPressed: onPressed,
+          icon: Icon(
             Icons.play_arrow,
             color: Colors.white,
-            size: 56,
           ),
+          iconSize: 56,
         );
       case PauseButtonType.Pause:
-        return Container(
-          decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 3),
-              shape: BoxShape.circle
-          ),
-          padding: EdgeInsets.all(8),
-          child: Icon(
+        return IconButton(
+          onPressed: onPressed,
+          icon: Icon(
             Icons.pause,
             color: Colors.white,
-            size: 56,
           ),
+          iconSize: 56,
         );
-      case PauseButtonType.Loading:
-        return SpinKitRing(
-          size: 56,
-          color: Colors.white,
-        );
+      default: break;
     }
     return null;
   }
@@ -329,8 +328,8 @@ class PlayerControllerState extends State<PlayerController> with SingleTickerPro
   @override
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
-    var issue = widget.videoKey == null ? null : GithubAccount().get(widget.videoKey);
-    UserInfo userInfo = GithubAccount().userInfo;
+    // var issue = widget.videoKey == null ? null : GithubAccount().get(widget.videoKey);
+    // UserInfo userInfo = GithubAccount().userInfo;
     return AnimatedOpacity(
       opacity: appeared ? 1 : 0,
       duration: Duration(milliseconds: 300),
@@ -349,7 +348,7 @@ class PlayerControllerState extends State<PlayerController> with SingleTickerPro
                 );
               },
               lerp: Color.lerp,
-              value: appeared ? Colors.black26 : Colors.transparent
+              value: (isControllerDisplay() && appeared) ? Colors.black26 : Colors.transparent
             ),
           ),
           Visibility(

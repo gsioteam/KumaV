@@ -6,6 +6,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:kuma_player/load_item.dart';
 import 'package:kuma_player/proxy_server.dart';
+import 'package:path/path.dart' as path;
 
 enum DownloadState {
   Stop,
@@ -15,7 +16,19 @@ enum DownloadState {
 
 
 class TimeoutError extends Error {
+  @override
+  String toString() {
+    return "No data received in 15 seconds";
+  }
+}
 
+class ExceptionError extends Error {
+  Exception exception;
+
+  ExceptionError(this.exception);
+
+  @override
+  String toString() => exception.toString();
 }
 
 class VideoDownloader {
@@ -23,7 +36,6 @@ class VideoDownloader {
   double _progress = 0;
   bool _progressDirty = true;
   bool _dependDirty = false;
-  bool _invalidate = false;
   DownloadState _state = DownloadState.Stop;
 
   ProxyItem get proxyItem => _proxyItem;
@@ -41,10 +53,10 @@ class VideoDownloader {
 
   void _setup(String url) {
     ProxyServer server = ProxyServer.instance;
-    if (!_invalidate) {
-      _proxyItem = server.get(url);
-      _proxyItem.retain();
+    _proxyItem = server.get(url);
+    _proxyItem.retain();
 
+    try {
       _proxyItem.checkBuffered();
       int count = 0;
       for (var item in _proxyItem.loadItems) {
@@ -54,25 +66,25 @@ class VideoDownloader {
         _state = DownloadState.Complete;
         onState?.call();
       }
+    } catch (e) {
 
-      _proxyItem.addOnBuffered(_onBuffered);
-      _proxyItem.addOnSpeed(_onSpeed);
     }
+
+    _proxyItem.addOnBuffered(_onBuffered);
+    _proxyItem.addOnSpeed(_onSpeed);
   }
 
   void dispose() {
     _proxyItem?.removeOnSpeed(_onSpeed);
     _proxyItem?.removeOnBuffered(_onBuffered);
     _proxyItem?.release();
-    _invalidate = true;
   }
 
   void _onBuffered() {
+    _progressDirty = true;
+    _sizeDirty = true;
     if (_state == DownloadState.Downloading) {
-      _progressDirty = true;
       onProgress?.call();
-    } else {
-      _dependDirty = true;
     }
   }
 
@@ -86,6 +98,21 @@ class VideoDownloader {
       _progressDirty = false;
     }
     return _progress;
+  }
+
+  int _size = 0;
+  bool _sizeDirty = true;
+  int get size {
+    if (_sizeDirty) {
+      _size = 0;
+      for (var item in _proxyItem.loadItems) {
+        if (item.loaded) {
+          _size += item.size;
+        }
+      }
+      _sizeDirty = false;
+    }
+    return _size;
   }
 
   DownloadState get state => _state;
@@ -132,8 +159,8 @@ class VideoDownloader {
           onSpeed?.call();
         }
       } catch (e) {
-        onError?.call(e);
-        _state = DownloadState.Complete;
+        onError?.call(e is Error ? e : ExceptionError(e));
+        _state = DownloadState.Stop;
         onState?.call();
         onSpeed?.call();
       }
@@ -144,6 +171,7 @@ class VideoDownloader {
 
   void start() {
     if (_state == DownloadState.Stop) {
+      _speeds.clear();
       _state = DownloadState.Downloading;
       onState?.call();
       checkState();

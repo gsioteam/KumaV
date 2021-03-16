@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
@@ -6,7 +7,10 @@ import 'package:glib/core/array.dart';
 import 'package:glib/main/collection_data.dart';
 import 'package:glib/main/data_item.dart';
 import 'package:crypto/crypto.dart';
+import 'package:glib/main/models.dart';
+import 'package:glib/main/project.dart';
 import 'package:kuma_player/video_downloader.dart';
+import 'package:kumav/utils/video_load_item.dart';
 import '../configs.dart';
 
 class DownloadItemData {
@@ -116,10 +120,13 @@ class DownloadQueueItem {
   void stop() {
     if (isDownloading) {
       downloader.stop();
+      _manager.waiting.remove(this);
     }
   }
 
   void destroy() {
+    data.release();
+    item.release();
     downloader.dispose();
   }
 
@@ -130,6 +137,76 @@ class DownloadQueueItem {
   bool get isDownloading {
     return _manager.waiting.contains(this) || _manager.downloading.contains(this);
   }
+
+  bool get canReload {
+    String handler = item.data["handler"];
+    return handler != null && handler.isNotEmpty;
+  }
+
+  Future<void> reload() async {
+    Project project = Project.allocate(item.projectKey);
+    if (!project.isValidated) {
+      project.release();
+      throw "No project found!";
+    }
+
+    String key = "${item.projectKey}:${item.link}";
+    Completer<void> completer = Completer();
+    VideoLoadItem loadItem;
+    try {
+      DataItem dataItem = DataItem.allocate().release();
+      dataItem.link = info.indexLink;
+      loadItem = VideoLoadItem(
+        dataItem,
+        project,
+        onComplete: (data, index) async {
+          if (index == null) {
+            String str = KeyValue.get("$video_select_key:$key");
+            index = int.tryParse(str) ?? 0;
+          }
+          var loadData = data[index];
+          try {
+            String url = await loadData.load();
+            if (info.videoUrl != url) {
+              item.data['url'] = url;
+              loadItem.context.saveData();
+              info.videoUrl = url;
+              this.data.release();
+              this.data = item.saveToCollection(collection_download, {
+                "title": info.title,
+                "picture": info.picture,
+                "link": info.link,
+                "subtitle": info.subtitle,
+                "videoUrl": info.videoUrl,
+                "displayTitle": info.displayTitle,
+                "indexLink": info.indexLink,
+              }).control();
+              downloader.dispose();
+              downloader = VideoDownloader(info.videoUrl);
+            }
+
+            completer.complete();
+          } catch (e) {
+            completer.completeError(e);
+          }
+        },
+        onError: (e) {
+          completer.completeError(e);
+        },
+        readCache: false,
+        videoUrl: info.videoUrl
+      );
+      await completer.future;
+    } catch (e) {
+      loadItem.finish();
+      project.release();
+      rethrow;
+    }
+    loadItem.finish();
+    project.release();
+  }
+
+  int get size => downloader.size;
 }
 
 class DownloadManager {

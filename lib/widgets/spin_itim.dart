@@ -3,8 +3,9 @@ import 'package:flutter/cupertino.dart';
 
 class SpinItem extends StatefulWidget {
   final Widget child;
+  final bool animated;
 
-  SpinItem({Key key, this.child,}) : super(key: key);
+  SpinItem({Key key, this.child, this.animated = false}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => SpinItemState();
@@ -21,6 +22,9 @@ class SpinItemState extends State<SpinItem> with SingleTickerProviderStateMixin 
         duration: Duration(seconds: 1)
     );
     super.initState();
+    if (widget.animated) {
+      startAnimation();
+    }
   }
 
   @override
@@ -37,7 +41,17 @@ class SpinItemState extends State<SpinItem> with SingleTickerProviderStateMixin 
     );
   }
 
-
+  @override
+  void didUpdateWidget(covariant SpinItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animated != oldWidget.animated) {
+      if (widget.animated) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    }
+  }
 
   void startAnimation() {
     animationController.repeat();

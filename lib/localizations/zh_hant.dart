@@ -54,4 +54,8 @@ const Map words = {
   "sort_title": "標題排序",
   "sort_subtitle": "副標題排序",
   "waiting": "等待中...",
+  "download_size": "下載空間",
+  "cached_size": "緩存空間",
+  "clear_cache": "清空緩存，請確認",
+  "clear": "清空緩存",
 };

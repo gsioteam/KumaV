@@ -5,8 +5,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as path;
 
 const int MAX_MEMORY_LENGTH = 20 * 1024 * 1024;
+
+class SizeResult {
+  int cached = 0;
+  int other = 0;
+}
 
 class CacheManager {
   Directory dir;
@@ -60,6 +66,22 @@ class CacheManager {
     }
   }
 
+  int getSize(String key) {
+    if (_cache.containsKey(key)) {
+      _keys.remove(key);
+      _keys.insert(0, key);
+      return _cache[key].length;
+    }
+    String path = dir.path + (key[0] == "/" ? key : "/"+key);
+    File file = File(path);
+    if (file.existsSync()) {
+      var stat = file.statSync();
+      return stat.size;
+    } else {
+      return 0;
+    }
+  }
+
   void _addCache(String key, List<int> buf) {
     if (_cache.containsKey(key)) {
       return;
@@ -105,6 +127,32 @@ class CacheManager {
   void remove(String key) {
     _removeCache(key);
     String path = dir.path + (key[0] == "/" ? key : "/"+key);
-    File(path).deleteSync();
+    var file = File(path);
+    if (file.existsSync()) file.deleteSync();
+  }
+
+  Future<SizeResult> calculateSize(Set<String> cached) async {
+    SizeResult result = SizeResult();
+    await for (var entry in dir.list(recursive: true, followLinks: false)) {
+      if (entry is File) {
+        var path = entry.path.replaceFirst("${dir.path}/", '');
+        String key = path.split('/').first;
+        if (cached.contains(key)) {
+          result.cached += (await entry.stat()).size;
+        } else {
+          result.other += (await entry.stat()).size;
+        }
+      }
+    }
+    return result;
+  }
+
+  Future<void> clearWithout(Set<String> cached) async {
+    await for (var entry in dir.list(followLinks: false)) {
+      String name = path.basename(entry.path);
+      if (!cached.contains(name)) {
+        await entry.delete(recursive: true);
+      }
+    }
   }
 }

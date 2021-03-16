@@ -58,4 +58,8 @@ The copyright of the downloadable video resources provided by this software belo
   "send_failed": "Send failed!",
   "login_to_comment": "Login to comment",
   "waiting": "Waiting...",
+  "download_size": "Download Size",
+  "cached_size": "Cached Size",
+  "clear_cache": "Would you like to clear cache?",
+  "clear": "Clear Cache",
 };

@@ -49,22 +49,27 @@ class _FavoriteItemState extends State<FavoriteItem> {
       child: Dismissible(
         background: Container(color: Colors.red,),
         key: ObjectKey(widget.item),
-        child: ListTile(
-          title: Text(title),
-          subtitle: Text(subtitle),
-          leading: Image(
-            image: CachedNetworkImageProvider(picture),
-            fit: BoxFit.cover,
-            width: 56,
-            height: 56,
-            gaplessPlayback: true,
-          ),
-          onTap: () {
-            setState(() {
-              widget.onTap();
-            });
-          },
-          trailing: widget.item.hasNew ? Icon(Icons.fiber_new, color: Colors.red,) : null,
+        child: Column(
+          children: [
+            ListTile(
+              title: Text(title),
+              subtitle: Text(subtitle),
+              leading: Image(
+                image: CachedNetworkImageProvider(picture),
+                fit: BoxFit.cover,
+                width: 56,
+                height: 56,
+                gaplessPlayback: true,
+              ),
+              onTap: () {
+                setState(() {
+                  widget.onTap();
+                });
+              },
+              trailing: widget.item.hasNew ? Icon(Icons.fiber_new, color: Colors.red,) : null,
+            ),
+            Divider(height: 1,)
+          ],
         ),
         onDismissed: (direction) {
           widget.onDismiss?.call();

@@ -165,28 +165,26 @@ class VideoInnerState extends State<VideoInner> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        color: Colors.black,
-        child: Padding(
-            padding: widget.padding,
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  Container(
-                    height: math.max(widget.videoHeight, 0),
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
+  Widget buildVideoDetail() {
+    return Container(
+      color: Colors.black,
+      child: Padding(
+          padding: widget.padding,
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                Container(
+                  height: math.max(widget.videoHeight, 0),
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
                       color: Colors.black
-                    ),
-                    child: OverflowBox(
-                      maxHeight: math.max(widget.videoHeight, MINI_SIZE),
-                      child: Row(
-                        children: [
-                          Expanded(
+                  ),
+                  child: OverflowBox(
+                    maxHeight: math.max(widget.videoHeight, MINI_SIZE),
+                    child: Row(
+                      children: [
+                        Expanded(
                             child: FullKumaPlayer(
                               controller: controller,
                               state: widget.state,
@@ -224,18 +222,18 @@ class VideoInnerState extends State<VideoInner> {
                               onTurnMini: widget.onMiniClicked,
                               danmakuController: danmakuController,
                             )
-                          ),
-                          Container(
-                            width: widget.videoWidth,
-                            clipBehavior: Clip.hardEdge,
-                            decoration: BoxDecoration(
+                        ),
+                        Container(
+                          width: widget.videoWidth,
+                          clipBehavior: Clip.hardEdge,
+                          decoration: BoxDecoration(
                               color: Colors.white
-                            ),
-                            child: OverflowBox(
-                              maxWidth: math.max(160, widget.videoWidth),
-                              child: Row(
-                                children: [
-                                  Expanded(
+                          ),
+                          child: OverflowBox(
+                            maxWidth: math.max(160, widget.videoWidth),
+                            child: Row(
+                              children: [
+                                Expanded(
                                     child: TapDetector(
                                       onTap: (event) {
                                         if (widget.state == KumaState.Mini) {
@@ -258,31 +256,37 @@ class VideoInnerState extends State<VideoInner> {
                                         ),
                                       ),
                                     )
-                                  ),
-                                  IconButton(
+                                ),
+                                IconButton(
                                     icon: Icon(controller?.value?.isPlaying == true ? Icons.pause : Icons.play_arrow),
                                     onPressed: playOrPause
-                                  ),
-                                  IconButton(
+                                ),
+                                IconButton(
                                     icon: Icon(Icons.close),
                                     onPressed: widget.onClose
-                                  )
-                                ],
-                              ),
+                                )
+                              ],
                             ),
-                          )
-                        ],
-                      ),
+                          ),
+                        )
+                      ],
                     ),
                   ),
-                  Expanded(
-                    child: widget.child
-                  ),
-                ],
-              ),
-            )
-        ),
+                ),
+                Expanded(
+                  child: widget.child
+                ),
+              ],
+            ),
+          )
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: buildVideoDetail(),
     );
   }
 
@@ -308,7 +312,13 @@ class VideoInnerState extends State<VideoInner> {
   }
 
   void playOrPause() {
-
+    if (controller.value != null) {
+      if (controller.value.isPlaying) {
+        controller.pause();
+      } else {
+        controller.play();
+      }
+    }
   }
 
   String get startTimeKey => "$start_time_key:${widget.data.key}";
