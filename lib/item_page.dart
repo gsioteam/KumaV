@@ -23,6 +23,7 @@ import 'package:kumav/widgets/better_refresh_indicator.dart';
 import 'package:kumav/widgets/fullscreen_player.dart';
 import 'package:kumav/widgets/overlay_alert.dart';
 import 'package:kumav/widgets/tap_detector.dart';
+import 'main_settings_page.dart';
 import 'utils/event_listener.dart';
 import 'widgets/full_kuma_player.dart';
 import 'dart:math' as math;
@@ -30,6 +31,7 @@ import 'package:glib/main/error.dart' as glib;
 
 import 'widgets/overlay_menu.dart';
 import 'widgets/player_controller.dart';
+import 'widgets/source_page.dart';
 import 'widgets/video_widget.dart';
 import 'localizations/localizations.dart';
 import 'utils/favorites_manager.dart';
@@ -468,21 +470,53 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
     return Row(
       children: [
         Expanded(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(14, 10, 14, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(dataItem?.title ?? "",
-                    style: theme.textTheme.bodyText2.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  Padding(padding: EdgeInsets.only(top: 6)),
-                  Text(dataItem?.subtitle ?? "",
-                    style: theme.textTheme.bodyText2.copyWith(color: Colors.grey),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14, 10, 14, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: dataItem?.title ?? "",
+                        style: theme.textTheme.bodyText2.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.top,
+                        child: TextButton(
+                          style: ButtonStyle(
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: MaterialStateProperty.all(EdgeInsets.only(left: 4, right: 4, top: 1, bottom: 1)),
+                            minimumSize: MaterialStateProperty.all(Size.zero),
+                          ),
+                          child: Text(
+                            "[${kt("source")}]",
+                            style: TextStyle(
+                              fontSize: 10
+                            ),
+                          ),
+                          onPressed: () {
+                            toMini();
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                              DataItem item = itemContext.infoData;
+                              return SourcePage(
+                                url: item.link,
+                              );
+                            }));
+                          },
+                        ),
+                      )
+                    ]
                   )
-                ],
-              ),
-            )
+                ),
+                Padding(padding: EdgeInsets.only(top: 6)),
+                Text(dataItem?.subtitle ?? "",
+                  style: theme.textTheme.bodyText2.copyWith(color: Colors.grey),
+                )
+              ],
+            ),
+          )
         ),
         // IconButton(
         //     padding: EdgeInsets.all(5),
@@ -562,10 +596,10 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
   }
 
   bool reloadData = false;
+  GlobalKey<VideoInnerState> videoKey = GlobalObjectKey(null);
 
   @override
   Widget build(BuildContext context) {
-    bool refuse = KeyValue.get("refuse_overlay") == "true";
     DataItem dataItem = itemContext?.infoData;
     var theme = Theme.of(context);
 
@@ -670,28 +704,11 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
               ],
               controller: menuController1,
             ),
-            OverlayMenu(
-              builder: (context, onPressed) {
-                return IconButton(
-                    icon: Icon(orderIndex == ORDER ? Icons.trending_up : Icons.trending_down, color: Theme.of(context).primaryColor),
-                    onPressed: onPressed
-                );
-              },
-              items: [
-                OverlayMenuItem(
-                    child: menuItem(Icon(Icons.trending_up, color: Colors.black87,), orderIndex == ORDER),
-                    onPressed: () {
-                      onOrderChanged(ORDER);
-                    }
-                ),
-                OverlayMenuItem(
-                    child: menuItem(Icon(Icons.trending_down, color: Colors.black87,), orderIndex == R_ORDER),
-                    onPressed: () {
-                      onOrderChanged(R_ORDER);
-                    }
-                )
-              ],
-              controller: menuController2,
+            IconButton(
+              icon: Icon(orderIndex == ORDER ? Icons.trending_up : Icons.trending_down, color: Theme.of(context).primaryColor),
+              onPressed: () {
+                onOrderChanged(orderIndex == ORDER ? R_ORDER : ORDER);
+              }
             ),
             VerticalDivider(),
             IconButton(
@@ -763,7 +780,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
           top: current.top,
           bottom: current.bottom,
           child: VideoInner(
-            key: GlobalObjectKey(videoData),
+            key: videoKey,
             data: videoData,
             videoHeight: videoHeight,
             padding: padding,
@@ -782,7 +799,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
               reloadData = true;
               _readVideoAndPlay(this.data[currentIndex]);;
             },
-            showAlert: refuse ? null : (context, complete) async {
+            showAlert: Settings.floatingPlayer ? (context, complete) async {
               if (alertDialog == null) {
                 alertDialog = OverlayDialog(
                     builder: (context) {
@@ -792,13 +809,14 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
                         actions: [
                           TextButton(
                             onPressed: () {
-                              KeyValue.set("refuse_overlay", "true");
+                              Settings.floatingPlayer = false;
                               alertDialog.dismiss(false);
                             },
                             child: Text("no")
                           ),
                           TextButton(
                             onPressed: () {
+                              Settings.floatingPlayer = true;
                               alertDialog.dismiss(true);
                             },
                             child: Text("ok")
@@ -810,7 +828,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
               }
               bool ret = await alertDialog.show(context);
               complete(ret == true);
-            },
+            } : null,
             switchController: menuController3,
           ),
         );
@@ -899,6 +917,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
       HistoryManager().insert(itemContext.infoData);
       setState(() {
         videoData = null;
+        videoKey = GlobalObjectKey(videoData);
       });
 
       toInPage();
@@ -942,6 +961,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
     controller.forward(from: 0);
     setState(() {
       videoData = null;
+      videoKey = GlobalObjectKey(videoData);
       status = ItemPageStatus.Hidden;
     });
 
@@ -1266,6 +1286,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
     loadItem?.finish();
     setState(() {
       videoData = null;
+      videoKey = GlobalObjectKey(videoData);
     });
     loadItem = VideoLoadItem(
       dataItem,
@@ -1277,11 +1298,13 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
           videoData = _ItemVideoData(items)
             ..key = "${bookItem.projectKey}:$link"
             ..initialIndex = idx;
+          videoKey = GlobalObjectKey(videoData);
         });
       },
       onError: (error) {
         print("error $error");
-        Fluttertoast.showToast(msg: "${dataItem.link} failed: ${error.toString()}");
+        Fluttertoast.showToast(msg: "$link failed: ${error.toString()}");
+        videoKey?.currentState?.getError(error.toString());
       },
       readCache: !reloadData
     );

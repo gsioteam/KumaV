@@ -45,6 +45,7 @@ dependencies:
   aes_crypt: ^0.1.1
   yaml: ^2.1.2
   auto_orientation: ^1.0.6
+  webview_flutter: '>=2.0.0'
 
 dev_dependencies:
   flutter_test:

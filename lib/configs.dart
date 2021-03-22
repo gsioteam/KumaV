@@ -24,6 +24,9 @@ const String last_video_key = "last_video";
 const String video_select_key = "video_select";
 const String start_time_key = "start_time";
 
+const String download_limit_key = "download_limit";
+const String floating_player_key = "floating_player";
+
 const double MINI_SIZE = 68;
 const double MINI_WIDTH = 120;
 

@@ -1,42 +1,82 @@
 
 const {Collection} = require('./collection');
+const crossCloudfare = require('./cross_cloudfare');
 
 class HomeCollection extends Collection {
 
-    reload(_, cb) {
-        let pageUrl = new PageURL(this.url);
-        this.fetch(this.url).then((doc)=>{
+    constructor(data) {
+        super(data);
+        this.page = 0;
+        this.pageUrl = data.pageUrl;
+    }
 
-            let items = [];
-
-            function processNode(node) {
-                let item = glib.DataItem.new();
-                item.type = glib.DataItem.Type.Header;
-                item.title = node.querySelector('h2.title').text.trim().substr(1);
-                items.push(item);
-
-                let list = node.querySelectorAll('ul.vodlist > li');
-                for (let vod of list) {
-                    let item = glib.DataItem.new();
-                    item.title = vod.querySelector('.vodlist_title a').text;
-                    item.subtitle = vod.querySelector('.vodlist_sub').text;
-                    let imgLink = vod.querySelector('.vodlist_thumb');
-                    item.link = pageUrl.href(imgLink.attr('href'));
-                    item.picture = pageUrl.href(imgLink.attr('data-original'));
-                    items.push(item);   
+    async _fetch(page) {
+        if (!this.token) {
+            let res = await crossCloudfare({
+                url: this.url,
+                settings: this.settings
+            });
+            let doc = res.document;
+            let nodes = doc.querySelectorAll('body script:not([src])');
+            for (let node of nodes) {
+                let text = node.text.trim();
+                if (text.match(/^var vars/)) {
+                    var vars;
+                    eval(text.replace(/^var vars/, 'vars'));
+                    this.token = vars.token;
                 }
             }
+        }
+        let res = await crossCloudfare({
+            url: this.hrefUrl(page), 
+            settings: this.settings
+        });
+        let data = JSON.parse(res.body.text());
 
-            let panel = doc.querySelector('.container > .pannel');
-            processNode(panel);
+        let items = [];
+        for (let i = 0, t = data.items.length; i < t; i++) {
+            let item = glib.DataItem.new();
+            const it = data.items[i];
+            item.title = it.title;
+            item.subtitle = it.tagline;
+            item.summary = it.plot;
+            item.picture = it.poster;
+            let arr = it.title.split(' ').map((e) => e.toLowerCase());
+            arr.unshift(it.id.toString());
 
-            let list = doc.querySelectorAll('.vod_row.tit_up .pannel');
-            for (let node of list) {
-                processNode(node);
-            }
+            item.link = this.url + '/' + arr.join('-');
+            items.push(item);
+        }
+        return items;
+    }
+
+    hrefUrl(page) {
+        return this.pageUrl.replace('{0}', page + 1).replace('{1}', this.token);
+    }
+
+    reload(_, cb) {
+        let page = 0;
+        this._fetch(page).then((items) => {
+            this.page = page;
             this.setData(items);
             cb.apply(null);
-        }).catch((err)=>{
+        }).catch(function (err) {
+            if (err instanceof Error) {
+                console.log("Err " + err.message + " stack " + err.stack);
+                err = glib.Error.new(305, err.message);
+            }
+            cb.apply(err);
+        });
+        return true;
+    }
+
+    loadMore(cb) {
+        let page = this.page + 1;
+        this._fetch(page).then((items) => {
+            this.page = page;
+            this.appendData(items);
+            cb.apply(null);
+        }).catch(function (err) {
             if (err instanceof Error) {
                 console.log("Err " + err.message + " stack " + err.stack);
                 err = glib.Error.new(305, err.message);
@@ -47,70 +87,11 @@ class HomeCollection extends Collection {
     }
 }
 
-class CategoryCollection extends Collection {
-
-    constructor(data) {
-        super(data);
-        this.page = 0;
-    }
-
-    async fetch(url) {
-        let pageUrl = new PageURL(url);
-
-        let doc = await super.fetch(url);
-        let nodes = doc.querySelectorAll('ul.vodlist > li');
-
-        let items = [];
-        for (let vod of nodes) {
-            let item = glib.DataItem.new();
-            item.title = vod.querySelector('.vodlist_title a').text;
-            item.subtitle = vod.querySelector('.vodlist_sub').text;
-            let imgLink = vod.querySelector('.vodlist_thumb');
-            item.link = pageUrl.href(imgLink.attr('href'));
-            item.picture = pageUrl.href(imgLink.attr('data-original'));
-            items.push(item);
-        }
-        return items;
-    }
-
-    makeURL(page) {
-        if (this.url.indexOf('{0}') == -1) return this.url;
-        return this.url.replace('{0}', page + 1);
-    }
-
-    reload(_, cb) {
-        let page = 0;
-        this.fetch(this.makeURL(page)).then((results)=>{
-            this.page = page;
-            this.setData(results);
-            cb.apply(null);
-        }).catch(function(err) {
-            if (err instanceof Error) 
-                err = glib.Error.new(305, err.message);
-            cb.apply(err);
-        });
-        return true;
-    }
-
-    loadMore(cb) {
-        if (this.url.indexOf('{0}') == -1) return false;
-        let page = this.page + 1;
-        this.fetch(this.makeURL(page)).then((results)=>{
-            this.page = page;
-            this.appendData(results);
-            cb.apply(null);
-        }).catch(function(err) {
-            if (err instanceof Error) 
-                err = glib.Error.new(305, err.message);
-            cb.apply(err);
-        });
-        return true;
-    }
-}
 
 module.exports = function(info) {
     let data = info.toObject();
-    if (data.id === 'home') 
-        return HomeCollection.new(data);
-    else return CategoryCollection.new(data);
+    // if (data.id === 'home') 
+    //     return HomeCollection.new(data);
+    // else return CategoryCollection.new(data);
+    return HomeCollection.new(data);
 };

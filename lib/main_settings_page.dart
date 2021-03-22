@@ -13,6 +13,7 @@ import 'widgets/home_widget.dart';
 import 'localizations/localizations.dart';
 import 'widgets/progress_dialog.dart';
 import 'widgets/settings_list.dart';
+import 'utils/download_manager.dart';
 
 class ClearProgressItem extends ProgressItem {
 
@@ -33,7 +34,27 @@ class ClearProgressItem extends ProgressItem {
   @override
   void cancel() {
   }
+}
 
+class Settings {
+
+  static int get downloadLimit {
+    String count = KeyValue.get(download_limit_key);
+    return count == null ? 3 : (int.tryParse(count) ?? 3);
+  }
+
+  static set downloadLimit(int count) {
+    KeyValue.set(download_limit_key, count.toString());
+  }
+
+  static bool get floatingPlayer {
+    String str = KeyValue.get(floating_player_key) ?? '';
+    return str.isEmpty ? true : (str == "true");
+  }
+
+  static set floatingPlayer(bool enable) {
+    KeyValue.set(floating_player_key, enable.toString());
+  }
 }
 
 class MainSettingsPage extends HomeWidget {
@@ -92,6 +113,7 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -175,12 +197,48 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
             value: size == null ? "..." : _sizeString(size.cached)
         ),
         SettingItem(
-            SettingItemType.Button,
-            kt("disclaimer"),
-            value: "",
-            data: () {
-              showCreditsDialog(context);
-            }
+          SettingItemType.Header,
+          kt("video"),
+        ),
+        SettingItem(
+          SettingItemType.Options,
+          kt("max_download_limit"),
+          value: Settings.downloadLimit,
+          data: [
+            OptionItem("1", 1),
+            OptionItem("2", 2),
+            OptionItem("3", 3),
+            OptionItem("4", 4),
+            OptionItem("5", 5),
+          ],
+          onChange: (value) {
+            setState(() {
+              DownloadManager().queueLimit = value;
+              Settings.downloadLimit = value;
+            });
+          }
+        ),
+        SettingItem(
+          SettingItemType.Switch,
+          kt("floating_player"),
+          value: Settings.floatingPlayer,
+          onChange: (value) {
+            setState(() {
+              Settings.floatingPlayer = value;
+            });
+          }
+        ),
+        SettingItem(
+          SettingItemType.Header,
+          kt("others"),
+        ),
+        SettingItem(
+          SettingItemType.Button,
+          kt("disclaimer"),
+          value: "",
+          data: () {
+            showCreditsDialog(context);
+          }
         )
       ],
     );

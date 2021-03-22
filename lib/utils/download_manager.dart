@@ -10,6 +10,7 @@ import 'package:crypto/crypto.dart';
 import 'package:glib/main/models.dart';
 import 'package:glib/main/project.dart';
 import 'package:kuma_player/video_downloader.dart';
+import 'package:kumav/main_settings_page.dart';
 import 'package:kumav/utils/video_load_item.dart';
 import '../configs.dart';
 
@@ -215,12 +216,13 @@ class DownloadManager {
   List<DownloadQueueItem> _items = [];
   List<DownloadQueueItem> get items => _items;
 
-  int queueLimit = 3;
+  int _queueLimit;
 
-  Set<DownloadQueueItem> downloading = Set();
+  List<DownloadQueueItem> downloading = [];
   Queue<DownloadQueueItem> waiting = Queue();
 
   DownloadManager._() {
+    _queueLimit = Settings.downloadLimit;
     Array arr = CollectionData.all(collection_download);
     for (CollectionData data in arr) {
       DownloadQueueItem queueItem = DownloadQueueItem(data, this);
@@ -234,6 +236,23 @@ class DownloadManager {
       _instance = DownloadManager._();
     }
     return _instance;
+  }
+
+  int get queueLimit => _queueLimit;
+
+  set queueLimit(int value) {
+    if (_queueLimit != value) {
+      _queueLimit = value;
+      if (downloading.length > _queueLimit) {
+        for (int i = _queueLimit, t = downloading.length; i < t; ++i) {
+          var item = downloading[i];
+          item.stop();
+          item.start();
+        }
+      } else if (downloading.length < _queueLimit) {
+        checkQueue();
+      }
+    }
   }
 
   void checkQueue() {

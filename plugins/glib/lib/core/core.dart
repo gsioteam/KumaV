@@ -21,7 +21,7 @@ class TypeInfo {
 }
 
 mixin AutoRelease {
-  static List<AutoRelease> _cachePool = [];
+  static Set<AutoRelease> _cachePool = Set();
   static Timer timer;
   int _retainCount = 1;
   bool _destroyed = false;
@@ -51,7 +51,7 @@ mixin AutoRelease {
 
   static _timeUp(Timer t) {
     t.cancel();
-    List<AutoRelease> copyList = List<AutoRelease>.from(_cachePool);
+    Set<AutoRelease> copyList = Set<AutoRelease>.from(_cachePool);
     _cachePool.clear();
     copyList.forEach((AutoRelease tar){
       tar.destroy();
@@ -149,6 +149,10 @@ List<dynamic> _convertArgv(Pointer<NativeTarget> argv, int length) {
         ret = (target.intValue != 0);
         break;
       }
+      case TypePointer: {
+        ret = target.pointerValue;
+        break;
+      }
       default: {
         ret = null;
       }
@@ -180,12 +184,12 @@ void _callClassFromNative(Pointer ptr, Pointer<Utf8> name, Pointer<NativeTarget>
 
 void _callInstanceFromNative(Pointer ptr, Pointer<Utf8> name, Pointer<NativeTarget> argv, int length, Pointer<NativeTarget> result) {
   String fun = Utf8.fromUtf8(name);
+  Base ins = _objectDB[ptr];
   try {
-    Base ins = _objectDB[ptr];
     dynamic ret = ins.apply(fun, _convertArgv(argv, length));
     _toNative(ret, result);
   }catch (e, stacktrace) {
-    print("Call $fun failed : ${e.toString()} \n$stacktrace");
+    print("Call $fun on $ins failed : ${e.toString()} \n$stacktrace");
   }
 }
 

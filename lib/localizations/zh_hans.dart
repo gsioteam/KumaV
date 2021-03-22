@@ -58,4 +58,5 @@ const Map words = {
   "cached_size": "缓存空间",
   "clear_cache": "清空缓存，请确认",
   "clear": "清空缓存",
+  "source": "来源",
 };

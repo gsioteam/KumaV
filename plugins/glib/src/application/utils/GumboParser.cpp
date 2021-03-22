@@ -44,7 +44,7 @@ gc::Ref<gs::GumboNode> gs::GumboNode::parse(const gc::Ref<gc::Data> &data, const
     } else {
         buf_data = data;
     }
-    b8_vector buf = buf_data->readAll();
+    string buf = buf_data->text();
     data->close();
 //    const char* str = (const char*)buf.data();
 //    string cppstr;

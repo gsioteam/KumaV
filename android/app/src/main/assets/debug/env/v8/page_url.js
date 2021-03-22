@@ -16,10 +16,22 @@ class URL {
         if (!this.path) this.path = "/";
         let search = path.substr(sidx);
         let hidx = search.indexOf('#');
-        this.search = search.substr(0, hidx);
-        this.hash = search.substr(hidx);
+        if (hidx >= 0) {
+            this.search = search.substr(0, hidx);
+            this.hash = search.substr(hidx);
+        } else {
+            this.search = search;
+            this.hash = '';
+        }
         this.origin = this.protocol + '//' + this.hostname;
         this.href = this.origin + this.path + this.search + this.hash;
+
+        let query = {};
+        this.search.substr(1).split('&').forEach(function(str) {
+            let arr = str.split('=');
+            if (arr.length === 2) query[arr[0]] = arr[1];
+        });
+        this.searchParams = query;
     }
 }
 
@@ -54,4 +66,7 @@ class PageURL {
     }
 }
 
-module.exports = PageURL;
+module.exports = {
+    PageURL,
+    URL
+};

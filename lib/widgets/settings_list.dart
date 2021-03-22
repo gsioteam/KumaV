@@ -19,7 +19,7 @@ typedef ValueChangedCallback = void Function(dynamic);
 
 class OptionItem {
   String text;
-  String value;
+  dynamic value;
 
   OptionItem(this.text, this.value);
 }
@@ -47,7 +47,7 @@ class SettingsList extends StatefulWidget {
 
 class _SettingsListState extends State<SettingsList> {
 
-  String findOptionsName(SettingItem item, String value) {
+  String findOptionsName(SettingItem item, dynamic value) {
     List<OptionItem> data = item.data;
     for (OptionItem it in data) {
       if (it.value == value) {
@@ -57,7 +57,7 @@ class _SettingsListState extends State<SettingsList> {
     return null;
   }
 
-  int findOptionsIndex(SettingItem item, String value) {
+  int findOptionsIndex(SettingItem item, dynamic value) {
     List<OptionItem> data = item.data;
     for (int i = 0, t = data.length; i < t; ++i) {
       if (data[i].value == value) {
@@ -130,7 +130,7 @@ class _SettingsListState extends State<SettingsList> {
         completer.complete(data[selects[0]].value);
       }
     );
-    picker.showModal<String>(context);
+    picker.showModal(context);
     return completer.future;
   }
 
@@ -145,8 +145,8 @@ class _SettingsListState extends State<SettingsList> {
       }
       case SettingItemType.Options: {
         return buildStyle1(item, () async {
-          String newValue = await pickerValue((item.data as Iterable<OptionItem>).map<PickerItem<String>>((e) {
-            return PickerItem<String>(
+          dynamic newValue = await pickerValue((item.data as Iterable<OptionItem>).map<PickerItem<dynamic>>((e) {
+            return PickerItem<dynamic>(
                 text: Text(e.text),
                 value: e.value
             );

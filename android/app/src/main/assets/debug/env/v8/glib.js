@@ -97,6 +97,20 @@ Request.BodyType = {
 };
 
 class Collection extends Object {
+    get settings() {
+        let collection = this;
+        return {
+            set(key, value) {
+                collection.setSetting(key, value);
+            },
+            get(key) {
+                return collection.getSetting(key);
+            },
+            save() {
+                collection.synchronizeSettings();
+            }
+        };
+    }
 }
 Collection.class_name = 'gs::Collection';
 Collection.reg();
@@ -213,6 +227,16 @@ SettingItem.Type = {
     Options: 3
 };
 
+class Platform extends Object {
+}
+Platform.class_name = 'gs::Platform';
+Platform.reg();
+
+class Browser extends Object {
+}
+Browser.class_name = 'gs::Browser';
+Browser.reg();
+
 module.exports = {
     Object,
     Callback,
@@ -227,5 +251,7 @@ module.exports = {
     Error,
     ScriptContext,
     Encoder,
-    SettingItem
+    SettingItem,
+    Platform,
+    Browser,
 };

@@ -118,7 +118,7 @@ namespace gs {
 
     CLASS_END
 #endif
-    
+
 
     CLASS_BEGIN_N(RubyContext, Context)
 

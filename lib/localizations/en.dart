@@ -62,4 +62,5 @@ The copyright of the downloadable video resources provided by this software belo
   "cached_size": "Cached Size",
   "clear_cache": "Would you like to clear cache?",
   "clear": "Clear Cache",
+  "source": "Source",
 };

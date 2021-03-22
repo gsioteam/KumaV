@@ -85,6 +85,11 @@ void Request::setTimeout(uint64_t timeout) {
     imp->req()->apply(setTimeout, pointer_vector{&v1});
 }
 
+int Request::getStatusCode() {
+    NAME(getStatusCode);
+    return imp->req()->apply(getStatusCode, pointer_vector());
+}
+
 int64_t Request::getUploadNow() const {
     NAME(getUploadNow);
     return imp->req()->apply(getUploadNow, pointer_vector());
@@ -121,6 +126,12 @@ void Request::setOnComplete(const gc::Callback &on_complete) {
     NAME(setOnComplete);
     Variant v1 = on_complete;
     imp->req()->apply(setOnComplete, pointer_vector{&v1});
+}
+
+void Request::setOnResponse(const gc::Callback &on_response) {
+    NAME(setOnResponse);
+    Variant v1 = on_response;
+    imp->req()->apply(setOnResponse, pointer_vector{&v1});
 }
 
 gc::Ref<gc::Data> Request::getResponseBody() {

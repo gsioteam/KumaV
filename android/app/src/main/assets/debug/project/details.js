@@ -1,37 +1,47 @@
 
 const {Collection} = require('./collection');
+const crossCloudfare = require('./cross_cloudfare');
 
 class DetailsCollection extends Collection {
     
     async fetch(url) {
-        let pageUrl = new PageURL(url);
-        let doc = await super.fetch(url);
+        let res = await crossCloudfare({
+            url,
+            settings: this.settings
+        });
+        let doc = res.document;
 
-        let info_data = this.info_data;
-        let summay = doc.querySelector('.content').text.trim();
-        let arr = summay.split('\n').map(function(str) {return str.trim();});
-        arr.splice(arr.length - 1, 1);
-
-        info_data.summary = arr.join('\n');
-
-        let tabs = doc.querySelectorAll('.play_source .play_source_tab a');
-        let lists = doc.querySelectorAll('.play_source .play_list_box .playlist_full');
-        let len = tabs.length;
-        let items = [];
-        for (let i = 0; i < len; ++i) {
-            let tab = tabs[i], list = lists[i];
-            let subtitle = tab.text.substr(1).trim();
-            let nodes = list.querySelectorAll('ul.content_playlist > li > a');
-            for (let link of nodes) {
-                let item = glib.DataItem.new();
-                item.title = link.text;
-                item.subtitle = subtitle;
-                item.link = pageUrl.href(link.attr('href'));
-                items.push(item);
+        let iframe = doc.querySelector('iframe');
+        if (iframe) {
+            let item = glib.DataItem.new();
+            item.title = 'Video';
+            item.link = url;
+            return [item];
+        } else {
+            let seasons = doc.querySelectorAll('.seasons > a');
+            if (seasons.length > 0) {
+                let items = [];
+                for (let snode of seasons) {
+                    let title = snode.text;
+                    let res = await crossCloudfare({
+                        url: snode.attr('href'), 
+                        settings: this.settings
+                    });
+                    let doc = res.document;
+                    let links = doc.querySelectorAll('ul#episode-list > li.media');
+                    for (let node of links) {
+                        let item = glib.DataItem.new();
+                        item.link = node.querySelector('a').attr('href');
+                        let heading = node.querySelector('.media-heading');
+                        item.title = heading.text;
+                        item.subtitle = title;
+                        items.push(item);
+                    }
+                }
+                return items;
             }
         }
-
-        return items;
+        return [];
     }
 
     reload(_, cb) {

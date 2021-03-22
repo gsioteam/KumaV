@@ -412,6 +412,12 @@ class VideoInnerState extends State<VideoInner> {
 
   }
 
+  void getError(String error) {
+    setState(() {
+      loadError = error;
+    });
+  }
+
   Queue<int> _speeds = Queue();
 
   void _onSpeed(int sp) {

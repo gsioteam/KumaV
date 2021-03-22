@@ -52,6 +52,7 @@ namespace gs {
         METHOD void setHeader(const std::string &name, const std::string &value);
         METHOD void setBody(const gc::Ref<gc::Data> &body);
         METHOD void setTimeout(uint64_t timeout);
+        METHOD int getStatusCode();
         METHOD int64_t getUploadTotal() const;
         METHOD int64_t getUploadNow() const;
         METHOD int64_t getDownloadTotal() const;
@@ -60,6 +61,7 @@ namespace gs {
         METHOD void setOnUploadProgress(const gc::Callback &on_progress);
         METHOD void setOnProgress(const gc::Callback &on_progress);
         METHOD void setOnComplete(const gc::Callback & on_complete);
+        METHOD void setOnResponse(const gc::Callback & on_response);
 
         METHOD void setCacheResponse(bool cache_response);
 
@@ -70,16 +72,17 @@ namespace gs {
         METHOD void start();
         METHOD void cancel();
 
-
     protected:
         ON_LOADED_BEGIN(cls, gc::Object)
             ADD_METHOD_D(cls, Request, initialize, Raw);
             ADD_METHOD(cls, Request, setOnUploadProgress);
             ADD_METHOD(cls, Request, setOnProgress);
             ADD_METHOD(cls, Request, setOnComplete);
+            ADD_METHOD(cls, Request, setOnResponse);
             ADD_METHOD(cls, Request, setHeader);
             ADD_METHOD(cls, Request, setBody);
             ADD_METHOD(cls, Request, setTimeout);
+            ADD_METHOD(cls, Request, getStatusCode);
             ADD_METHOD(cls, Request, getUploadTotal);
             ADD_METHOD(cls, Request, getUploadNow);
             ADD_METHOD(cls, Request, getDownloadTotal);

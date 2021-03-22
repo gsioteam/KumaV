@@ -75,9 +75,9 @@ void Project::initialize(const std::string &path) {
 
             validated = true;
 
+            settings = std::shared_ptr<Settings>(new Settings(dir_name));
             if (config.contains("settings")) {
                 settings_path = config["settings"];
-                settings = std::shared_ptr<Settings>(new Settings(dir_name));
                 Ref<Context> context = createSettingsContext();
                 context->enterView();
                 context->exitView();

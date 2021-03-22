@@ -38,6 +38,7 @@ import 'layout/all.xml_layout.dart' as all;
 import 'package:xml_layout/xml_layout.dart';
 import 'dart:math' as math;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:glib/utils/browser.dart';
 
 void main() {
   runApp(MainApp());
@@ -53,6 +54,9 @@ enum HomePages {
 }
 
 class MainApp extends StatefulWidget {
+
+  MainApp({Key key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => MainAppState();
 }
@@ -247,7 +251,11 @@ class SplashScreenState extends State<SplashScreen> {
     future.then((value) {
       Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(
           settings: RouteSettings(name: home_page_name),
-          builder: (BuildContext context)=>HomePage()
+          builder: (BuildContext context) {
+            GlobalKey key = GlobalKey();
+            Browser.globalKey = key;
+            return HomePage(key: key);
+          }
       ), (route) => route.isCurrent);
     });
   }

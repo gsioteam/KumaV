@@ -1,6 +1,6 @@
 {
-    "name": "ynsqx.com",
-    "url": "http://www.ynsqx.com/",
+    "name": "theofficetv.com",
+    "url": "https://theofficetv.com/",
     "index": "index.js",
     "collections": [
         "details.js",
@@ -9,34 +9,15 @@
     "search": {
         "src": "search.js",
         "data": {
-            "url": "https://www.ynsqx.com/search/page/{1}/wd/{0}/"
+            "url": "https://theofficetv.com/search-for-movies-tv-shows-or-people?q={0}"
         }
     },
     "categories": [
         {
             "title": "首页",
             "id": "home",
-            "url": "https://www.ynsqx.com/"
-        },
-        {
-            "title": "电影",
-            "id": "dianying",
-            "url": "https://www.ynsqx.com/list/dianying/page/{0}/"
-        },
-        {
-            "title": "电视剧",
-            "id": "dianshiju",
-            "url": "https://www.ynsqx.com/list/dianshiju/page/{0}/"
-        },
-        {
-            "title": "综艺",
-            "id": "zongyi",
-            "url": "https://www.ynsqx.com/list/zongyi/page/{0}/"
-        },
-        {
-            "title": "动画",
-            "id": "dongman",
-            "url": "https://www.ynsqx.com/list/dongman/page/{0}/"
+            "url": "https://theofficetv.com/movies",
+            "pageUrl": "https://theofficetv.com/titles/paginate?_token={1}&perPage=18&page={0}&order=mc_num_of_votesDesc&type=movie&minRating=&maxRating="
         }
     ]
 }

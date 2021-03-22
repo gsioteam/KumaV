@@ -6,10 +6,11 @@
 #define GEN_SHELF_PLATFORM_H
 
 #include <core/Callback.h>
+#include "../gs_define.h"
 
 namespace gs {
 
-    class Platform {
+    CLASS_BEGIN_0_N(Platform)
         static ref_list callbacks;
         static std::mutex mtx;
 
@@ -36,7 +37,13 @@ namespace gs {
 
         static long startTimer(const gc::Callback &callback, float time, bool repeat = false);
         static void cancelTimer(long timer);
-    };
+
+        ON_LOADED_BEGIN(cls, gc::Object)
+            ADD_METHOD_D(cls, Platform, startTimer, false);
+            ADD_METHOD(cls, Platform, cancelTimer);
+        ON_LOADED_END
+
+    CLASS_END
 }
 
 

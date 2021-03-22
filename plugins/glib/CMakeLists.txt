@@ -120,6 +120,7 @@ set(GLIB_SRC
 
         thirdparties/sha1/sha1.c
 
+        src/application/utils/dart/DartBrowser.cpp
         src/application/utils/dart/DartRequest.cpp
         src/application/utils/dart/DartPlatform.cpp
         src/application/utils/JSON.cpp

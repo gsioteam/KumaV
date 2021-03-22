@@ -165,4 +165,9 @@ module GS
     Input = 2
     Options = 3
   end
+
+  class Platform < GS::Object 
+    native 'gs::Platform'
+  end
+
 end

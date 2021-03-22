@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ffi/ffi.dart';
 import 'package:glib/core/callback.dart';
 
 import '../core/core.dart';
 import '../core/data.dart';
+import '../core/gmap.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
@@ -63,13 +66,18 @@ class UrlRequest extends http.Request with ExtendsRequest {
   }
 }
 
+enum BodyType {
+  Raw,
+  Mutilpart,
+  UrlEncode
+}
+
 class Request extends Base {
   static reg() {
     Base.reg(Request, "gs::DartRequest", Base)
         ..constructor = ((id) => Request().setID(id));
   }
 
-  Map<String, String> headers = Map();
   Uint8List body;
   http.BaseRequest request;
   int uploadNow;
@@ -82,11 +90,15 @@ class Request extends Base {
   bool _canceled = false, _started = false;
   StreamSubscription<List<int>> _subscription;
   Uint8List responseBody;
+  GMap responseHeader;
   String _error;
+
+  int statusCode = 0;
 
   Callback onUploadProgress;
   Callback onDownloadProgress;
   Callback onComplete;
+  Callback onResponse;
 
   bool cacheResponse = false;
 
@@ -102,6 +114,7 @@ class Request extends Base {
     on("setOnUploadProgress", setOnUploadProgress);
     on("setOnProgress", setOnProgress);
     on("setOnComplete", setOnComplete);
+    on("setOnResponse", setOnResponse);
     on("getUploadNow", getUploadNow);
     on("getUploadTotal", getUploadTotal);
     on("getDownloadNow", getDownloadNow);
@@ -113,6 +126,8 @@ class Request extends Base {
     on("setCacheResponse", setCacheResponse);
 
     on("getResponseBody", getResponseBody);
+    on("getStatusCode", getStatusCode);
+    on("getResponseHeaders", getResponseHeaders);
   }
 
   _release() {
@@ -143,31 +158,47 @@ class Request extends Base {
     return Data.fromByteBuffer(responseBody.buffer).release();
   }
 
+  GMap getResponseHeaders() => responseHeader;
+
+  int getStatusCode() => statusCode;
+
   setHeader(String name, String value) {
     request.headers[name] = value;
   }
 
-  setBody(Pointer<Uint8> ptr, int length) {
+  setBody(Pointer ptr, int length) {
     if (request is UrlRequest) {
       var req = request as UrlRequest;
-      Uint8List buf = ptr.asTypedList(length);
-      req.bodyBytes = Uint8List.fromList(buf);
+      Uint8List buf = ptr.cast<Uint8>().asTypedList(length);
+      String str = Utf8.fromUtf8(ptr.cast<Utf8>());
+      print(str);
+      str = Utf8Decoder().convert(buf);
+      print(str);
+      // req.body = str;
+      Uint8List nbuf = new Uint8List(buf.length);
+      nbuf.setAll(0, buf);
+      req.bodyBytes = nbuf;
     }
   }
 
   setOnUploadProgress(Callback cb) {
-    onUploadProgress = cb;
-    if (onUploadProgress != null) onUploadProgress.control();
+    onUploadProgress?.release();
+    onUploadProgress = cb?.control();
   }
 
   setOnProgress(Callback cb) {
-    onDownloadProgress = cb;
-    if (onDownloadProgress != null) onDownloadProgress.control();
+    onDownloadProgress?.release();
+    onDownloadProgress = cb.control();
   }
 
   setOnComplete(Callback cb) {
-    onComplete = cb;
-    if (onComplete != null) onComplete.control();
+    onComplete?.release();
+    onComplete = cb?.control();
+  }
+
+  setOnResponse(Callback cb) {
+    onResponse?.release();
+    onResponse = cb?.control();
   }
 
   setTimeout(int timeout) {
@@ -221,12 +252,18 @@ class Request extends Base {
         http.StreamedResponse res = await request.send();
         if (_canceled) return;
         downloadTotal = res.contentLength;
+        statusCode = res.statusCode;
+        responseHeader?.release();
+        responseHeader = GMap.allocate(res.headers);
+        downloadTotal = res.contentLength;
+        onResponse?.invoke([]);
+
         downloadNow = 0;
-        List<int> receiveBody = List();
+        List<int> receiveBody = [];
         _subscription = res.stream.listen((value) {
           downloadNow += value.length;
           receiveBody.addAll(value);
-          if (onDownloadProgress != null) onDownloadProgress.invoke([downloadNow, downloadTotal]);
+          onDownloadProgress?.invoke([downloadNow, downloadTotal]);
         });
         await _subscription.asFuture().timeout(Duration(seconds: _timeout == null ? 30 : _timeout), onTimeout: () {
           if (!_canceled) {
@@ -234,18 +271,12 @@ class Request extends Base {
           }
         });
         responseBody = Uint8List.fromList(receiveBody);
-
-        if (request.url.host == "en.ninemanga.com") {
-          print(request.headers);
-          String str = String.fromCharCodes(responseBody);
-          print(str);
-        }
       }
 
     } catch (e) {
       _error = e.toString();
       print("Error $_error");
-      if (onComplete != null) onComplete.invoke([]);
+      if (onComplete != null) onComplete?.invoke([]);
       else print("Error complete $onComplete  on ($this) " + _error);
       cancel();
     }
@@ -284,6 +315,7 @@ class Request extends Base {
 
   @override
   destroy() {
+    responseHeader?.release();
     freeCallbacks();
   }
 }

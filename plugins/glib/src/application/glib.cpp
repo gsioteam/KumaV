@@ -28,6 +28,7 @@
 #include "main/LibraryContext.h"
 #include "main/Settings.h"
 #include "utils/dart/DartPlatform.h"
+#include "utils/dart/DartBrowser.h"
 
 using namespace gc;
 
@@ -55,6 +56,9 @@ extern "C" void initGlib() {
     ClassDB::reg<gs::LibraryContext>();
     ClassDB::reg<gs::LibraryContext>();
     ClassDB::reg<gs::SettingItem>();
+    ClassDB::reg<gs::Platform>();
+    ClassDB::reg<gs::DartBrowser>();
+    ClassDB::reg<gs::Browser>();
 }
 
 

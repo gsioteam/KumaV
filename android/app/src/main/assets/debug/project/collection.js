@@ -8,8 +8,6 @@ class Collection extends glib.Collection {
     fetch(url) {
         return new Promise((resolve, reject)=>{
             let req = glib.Request.new('GET', url);
-            // req.setHeader('User-Agent', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Mobile Safari/537.36');
-            req.setHeader('Accept-Language', 'en-US,en;q=0.9');
             this.callback = glib.Callback.fromFunction(function() {
                 if (req.getError()) {
                     reject(glib.Error.new(302, "Request error " + req.getError()));

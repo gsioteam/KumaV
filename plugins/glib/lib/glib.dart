@@ -24,6 +24,7 @@ import 'utils/platform.dart';
 import 'utils/bit64.dart';
 import 'utils/request.dart';
 import 'utils/script_context.dart';
+import 'utils/browser.dart';
 import 'main/collection_data.dart';
 import 'main/setting_item.dart';
 
@@ -59,6 +60,7 @@ class Glib {
     CollectionData.reg();
     LibraryContext.reg();
     SettingItem.reg();
+    Browser.reg();
 
     Pointer<Utf8> pstr = Utf8.toUtf8(root_path);
     postSetup(pstr);
