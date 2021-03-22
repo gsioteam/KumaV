@@ -14,10 +14,16 @@
     },
     "categories": [
         {
-            "title": "首页",
-            "id": "home",
+            "title": "Movies",
+            "id": "movies",
             "url": "https://theofficetv.com/movies",
             "pageUrl": "https://theofficetv.com/titles/paginate?_token={1}&perPage=18&page={0}&order=mc_num_of_votesDesc&type=movie&minRating=&maxRating="
+        }, 
+        {
+            "title": "Series",
+            "id": "series",
+            "url": "https://theofficetv.com/series",
+            "pageUrl": "https://theofficetv.com/titles/paginate?_token={1}&perPage=18&page={0}&order=mc_num_of_votesDesc&type=series&minRating=&maxRating="
         }
     ]
 }

@@ -28,8 +28,10 @@ class URL {
 
         let query = {};
         this.search.substr(1).split('&').forEach(function(str) {
-            let arr = str.split('=');
-            if (arr.length === 2) query[arr[0]] = arr[1];
+            let idx = str.indexOf('=');
+            if (idx > 0) {
+                query[str.substr(0, idx)] = str.substr(idx + 1);
+            }
         });
         this.searchParams = query;
     }

@@ -12,18 +12,13 @@ class VideoCollection extends Collection {
         let iframe = doc.querySelector('iframe');
         let src = iframe.attr('src');
 
-        let pageUrl = new PageURL(src);
-        let search = pageUrl.url.search;
-        let query = {};
-        search.substr(1).split('&').forEach(function(str) {
-            let arr = str.split('=');
-            if (arr.length === 2) query[arr[0]] = arr[1];
-        });
-        console.log(`id=${query['url']}&server=3`);
+        let uri = new URL(src);
+        console.log(src + " -- " + JSON.stringify(uri.searchParams));
+        console.log(`id=${uri.searchParams['url']}&server=3`);
         res = await crossCloudfare({
             url: "https://theofficetv.com/playerv1/result.php",
             settings: this.settings,
-            body: `id=${query['url']}&server=3`,
+            body: `id=${uri.searchParams['url']}&server=3`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -33,6 +28,7 @@ class VideoCollection extends Collection {
         if (doc) {
             let iframe = doc.querySelector('iframe');
             let src = iframe.attr('src');
+            console.log('src ' + src);
             let m = src.match(/vidsrc\.php/);
             if (m) {
                 let url = new URL(src);
@@ -40,13 +36,33 @@ class VideoCollection extends Collection {
             } else {
                 m = src.match(/akaplayer\.com\/([^/]+)/);
                 if (m) {
-                    src = 'https://gomo.to/movie/' + m[1];
+                    let str = m[1];
+                    let idx = str.indexOf('-');
+                    let tag;
+                    if (idx >= 0) {
+                        function processNumber(str) {
+                            let arr = str.split('-');
+                            for (let i = 0, t = arr.length; i < t; ++i) {
+                                let str = arr[i];
+                                if (str.length < 2) {
+                                    str = '0' + str;
+                                }
+                                arr[i] = str;
+                            }
+                            return arr.join('-');
+                        }
+                        str = str.substr(0, idx) + '/' + processNumber(str.substr(idx + 1));
+                        tag = 'show';
+                    } else {
+                        tag = 'movie';
+                    }
+                    src = `https://gomo.to/${tag}/${str}`;
                 } else {
                     src = null;
                 }
             }
             if (src) {
-                console.log('src: ' + src);
+                console.log('src ' + src);
                 let res = await crossCloudfare({
                     url: src,
                     settings: this.settings,

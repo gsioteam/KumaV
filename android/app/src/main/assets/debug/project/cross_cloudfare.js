@@ -1,24 +1,25 @@
 
 class Fetcher {
-    constructor({url, settings, body, method, headers}) {
+    constructor({url, settings, body, method, headers, userAgent}) {
         this.url = url;
         this.settings = settings;
         this.body = body;
         this.method = method || 'GET';
         this.headers = headers || {};
+        this.userAgent = userAgent;
     }
 
     run() {
         return new Promise((resolve, reject) => {
             let req = glib.Request.new(this.method, this.url);
-            let ua = this.settings.get('user-agent');
+            let ua = this.settings.get('user-agent'); //this.userAgent; //this.settings.get('user-agent');
             if (ua) {
                 console.log('user-agent ' + ua);
                 req.setHeader('user-agent', ua);
             }
             let cf_clearance = this.settings.get('cf_clearance');
             if (cf_clearance) {
-                console.log('cf_clearance ' + cf_clearance);
+                // console.log('cf_clearance ' + cf_clearance);
                 req.setHeader('cookie', `cf_clearance=${cf_clearance};`);
             }
             if (this.body) {
@@ -62,18 +63,20 @@ class ProcessBrowser {
 
     run() {
         return new Promise((resolve, reject) => {
-            let browser = glib.Browser.new(this.url, "cookie: cf_clearance", true);
+            let browser = glib.Browser.new(this.url, "cookie: cf_clearance", false);
             this.callback = glib.Callback.fromFunction((map) => {
-                if (browser.getError()) {
-                    reject(glib.Error.new(303, "Browser error " + req.getError()));
+                let error = browser.getError();
+                console.log('Error ' + error);
+                if (error) {
+                    reject(glib.Error.new(303, "Browser error " + error));
                 } else {
                     resolve(map.toObject());
                 }
             });
             browser.setOnComplete(this.callback);
-            // if (this.userAgent) {
-            //     browser.setUserAgent(this.userAgent);
-            // }
+            if (this.userAgent) {
+                browser.setUserAgent(this.userAgent);
+            }
             browser.start();
         });
     }
@@ -89,10 +92,14 @@ async function runProcess(options, try_count) {
         if (doc.querySelector('#cf-content')) {
             let browser = new ProcessBrowser(url);
             browser.userAgent = options.userAgent;
-            let data = await browser.run();
-            settings.set('cf_clearance', data['cf_clearance']);
-            settings.set('user-agent', data['user-agent']);
-            settings.save();
+            try {
+                let data = await browser.run();
+                settings.set('cf_clearance', data['cf_clearance']);
+                settings.set('user-agent', data['user-agent']);
+                settings.save();
+            } catch (e) {
+            }
+            console.log('try again!');
 
             if (try_count < 3) {
                 return await runProcess(options, try_count + 1);
@@ -107,7 +114,7 @@ async function runProcess(options, try_count) {
 
 module.exports = function ({url, settings, body, method, headers, userAgent}) {
     // if (userAgent == null) {
-    //     userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36';
+    //     userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36';
     // }
     return runProcess({url, settings, body, method, headers, userAgent}, 0);
 };
