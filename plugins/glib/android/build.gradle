@@ -52,5 +52,4 @@ android {
         }
     }
 
-    ndkVersion '20.1.5948944'
 }

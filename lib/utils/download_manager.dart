@@ -140,7 +140,7 @@ class DownloadQueueItem {
   }
 
   bool get canReload {
-    String handler = item.data["handler"];
+    String handler = item.data == null ? null : item.data["handler"];
     return handler != null && handler.isNotEmpty;
   }
 

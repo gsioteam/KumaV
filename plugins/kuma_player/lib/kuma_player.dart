@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock/wakelock.dart';
 
 import 'proxy_server.dart';
 
@@ -347,6 +348,8 @@ class _KumaPlayerState extends State<KumaPlayer> {
   void initState() {
     super.initState();
 
+    Wakelock.enable();
+
     widget.controller._setOverlay(
       widget.overlay,
       context: context,
@@ -380,6 +383,7 @@ class _KumaPlayerState extends State<KumaPlayer> {
   @override
   void dispose() {
     super.dispose();
+    Wakelock.disable();
   }
 
 }

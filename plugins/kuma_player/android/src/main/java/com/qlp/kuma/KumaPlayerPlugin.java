@@ -1,11 +1,15 @@
 package com.qlp.kuma;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.view.Surface;
 
@@ -47,6 +51,20 @@ public class KumaPlayerPlugin implements FlutterPlugin, MethodCallHandler, Activ
       flutterEngine = flutterPluginBinding.getFlutterEngine();
       channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "kuma_player");
       channel.setMethodCallHandler(this);
+
+      IntentFilter intentFilter = new IntentFilter();
+      intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+      flutterPluginBinding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+          if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+            for (Long key : overlayPlayers.keySet()) {
+              OverlayPlayerView playerView = overlayPlayers.get(key);
+              playerView.exoPlayer.pause();
+            }
+          }
+        }
+      }, intentFilter);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -141,6 +159,7 @@ public class KumaPlayerPlugin implements FlutterPlugin, MethodCallHandler, Activ
           if (overlayPlayerView != null) {
             overlayPlayerView.dismissOverlay();
             isPlaying = overlayPlayerView.exoPlayer.getPlayWhenReady();
+            overlayPlayers.remove(textureId.longValue());
           }
         }
       } catch (Exception e) {
