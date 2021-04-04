@@ -15,6 +15,16 @@ class Callback extends Object {
         }
         this.invoke(argv);
     }
+
+    toObject() {
+        if (this.func) return this.func;
+        else {
+            const that = this;
+            return function(d) {
+                return that.apply(...arguments);
+            };
+        }
+    }
 }
 
 Callback.class_name = 'gc::_Callback';
@@ -27,7 +37,12 @@ class FunctionCallback extends Callback {
             for (let i = 0; i < argv.length; i++) {
                 arr.push(argv.get(i));
             }
-            var ret = this.func.apply(this, arr);
+            let ret;
+            try {
+                ret = this.func.apply(this, arr);
+            } catch (e) {
+                console.log('error in Function Callback ' + e.message + '\n' + e.stack);
+            }
             return ret;
         } else {
             throw new Error("No function set!");
@@ -86,6 +101,18 @@ class Data extends Object {
 Data.class_name = 'gc::Data';
 Data.reg();
 
+class FileData extends Object {
+    toString(code) {
+        if (code) {
+            return Encoder.decode(this, code);
+        } else {
+            return this.text();
+        }
+    }
+}
+FileData.class_name = 'gc::FileData';
+FileData.reg();
+
 class Request extends Object {
 }
 Request.class_name = 'gs::Request';
@@ -135,6 +162,8 @@ function toObject(obj) {
             arr.push(toObject(obj.get(i)));
         }
         return arr;
+    } else if (obj instanceof Callback) {
+        return obj.toObject();
     } else {
         return obj;
     }
@@ -243,6 +272,7 @@ module.exports = {
     Array,
     Map,
     Data,
+    FileData,
     
     Request,
     Collection,

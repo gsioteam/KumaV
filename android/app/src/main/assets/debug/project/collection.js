@@ -5,9 +5,16 @@ class Collection extends glib.Collection {
         this.url = data.url || data.link;
     }
 
-    fetch(url) {
+    fetch(url, ops) {
+        let headers;
+        if (ops) headers = ops.headers;
         return new Promise((resolve, reject)=>{
             let req = glib.Request.new('GET', url);
+            if (headers) {
+                for (let key in headers) {
+                    req.setHeader(key, headers[key]);
+                }
+            }
             this.callback = glib.Callback.fromFunction(function() {
                 if (req.getError()) {
                     reject(glib.Error.new(302, "Request error " + req.getError()));

@@ -1,160 +1,82 @@
 const {Collection} = require('./collection');
 const crossCloudfare = require('./cross_cloudfare');
+const {setup} = require('./bundle');
 
-class VideoCollection extends Collection {
+class QuickVideoCollection extends Collection {
+
+    async processAjax(text) {
+        return new Promise((resolve, reject) => {
+            let ctx = this.ctx = glib.ScriptContext.new('js');
+            let data = glib.FileData.new(`${__dirname}/bundle.js`);
+            ctx.eval(data.toString());
+            let cb = ctx.eval('_setup');
+            this.onAjax = glib.Callback.fromFunction((data) => {
+                try {
+                    let d = data.toObject();
+                    let req = glib.Request.new(d.type, d.url);
+                    let arr = [];
+                    for (let key in d.data) {
+                        arr.push(`${key}=${d.data[key]}`);
+                    }
+                    req.setBody(glib.Data.fromString(arr.join('&')));
+                    req.setHeader('content-type', 'application/x-www-form-urlencoded');
+                    this.callback = glib.Callback.fromFunction(() => {
+                        let body = req.getResponseBody();
+                        d.success(body.text(), 'OK');
+                    });
+                    req.setOnComplete(this.callback);
+                    req.start();
+                    console.log('start');
+                } catch (e) {
+                    reject(e);
+                }
+            });
+            this.onComplete = glib.Callback.fromFunction((options) => {
+                resolve(options.toObject());
+            });
+            cb.apply({
+                onAjax: this.onAjax,
+                onComplete: this.onComplete
+            });
+            ctx.eval(text);
+        });
+    }
 
 	async fetch(url) {
-        let res = await crossCloudfare({
-            url, 
-            settings: this.settings
-        });
-        let doc = res.document;
-        let iframe = doc.querySelector('iframe');
-        let src = iframe.attr('src');
-
-        let uri = new URL(src);
-        console.log(src + " -- " + JSON.stringify(uri.searchParams));
-        console.log(`id=${uri.searchParams['url']}&server=3`);
-        res = await crossCloudfare({
-            url: "https://theofficetv.com/playerv1/result.php",
-            settings: this.settings,
-            body: `id=${uri.searchParams['url']}&server=3`,
-            method: 'POST',
+        console.log('url: ' + url);
+        let doc = await super.fetch(url, {
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                referer: 'https://javfull.net/'
             }
         });
-        doc = res.document;
-        if (doc) {
-            let iframe = doc.querySelector('iframe');
-            let src = iframe.attr('src');
-            console.log('src ' + src);
-            let m = src.match(/vidsrc\.php/);
-            if (m) {
-                let url = new URL(src);
-                src = url.searchParams['url'];
-            } else {
-                m = src.match(/akaplayer\.com\/([^/]+)/);
-                if (m) {
-                    let str = m[1];
-                    let idx = str.indexOf('-');
-                    let tag;
-                    if (idx >= 0) {
-                        function processNumber(str) {
-                            let arr = str.split('-');
-                            for (let i = 0, t = arr.length; i < t; ++i) {
-                                let str = arr[i];
-                                if (str.length < 2) {
-                                    str = '0' + str;
-                                }
-                                arr[i] = str;
-                            }
-                            return arr.join('-');
-                        }
-                        str = str.substr(0, idx) + '/' + processNumber(str.substr(idx + 1));
-                        tag = 'show';
-                    } else {
-                        tag = 'movie';
-                    }
-                    src = `https://gomo.to/${tag}/${str}`;
-                } else {
-                    src = null;
-                }
+        let scripts = doc.querySelectorAll('script:not([src])');
+        let selText;
+        for (let script of scripts) {
+            let text = script.text;
+            if (text.match(/ﾟωﾟ/)) {
+                selText = text;
             }
-            if (src) {
-                console.log('src ' + src);
-                let res = await crossCloudfare({
-                    url: src,
-                    settings: this.settings,
-                });
-                let doc = res.document;
-                let script = doc.querySelector('script:not([src])');
-
-                let onReady;
-                var $ = function() {
-                    return {
-                        ready(fn) {onReady = fn;},
-                        show() {},
-                        hide() {}
-                    };
-                };
-                let requestOptions;
-                $.ajax = function(ops) {
-                    requestOptions = ops;
-                };
-                var document = {};
-                eval(script.text);
-                if (onReady) {
-                    console.log('ready !');
-                    onReady();
-                }
-                if (requestOptions) {
-                    let headers = requestOptions.headers || {};
-                    headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
-                    let data = requestOptions.data;
-                    let arr = [];
-                    for (let key in data) {
-                        arr.push(`${key}=${data[key]}`);
-                    }
-                    console.log(requestOptions.url);
-                    let res = await crossCloudfare({
-                        method: requestOptions.type,
-                        settings: this.settings,
-                        url: requestOptions.url,
-                        headers: headers,
-                        body: arr.join('&')
-                    });
-                    data = JSON.parse(res.body.text());
-                    let linkUrl = data[0];
-                    res = await crossCloudfare({
-                        url: linkUrl,
-                        settings: this.settings
-                    });
-                    let doc = res.document;
-                    let source;
-                    var jwplayer = function() {
-                        return {
-                            setup(data) {
-                                source = data;
-                            },
-                            onPlay() {},
-                            onTime() {},
-                            onComplete() {},
-                            getState() {return ''}
-                        }
-                    };
-                    let ss = doc.querySelectorAll('body script:not([src])');
-                    let scriptText;
-                    for (let s of ss) {
-                        let text = s.text.trim();
-                        if (text.startsWith('eval')) {
-                            scriptText = text;
-                        }
-                    }
-                    console.log(scriptText);
-                    eval(scriptText);
-                    if (source) {
-                        let items = [];
-                        for (let i = 0, t = source.sources.length; i < t; ++i) {
-                            let d = source.sources[i];
-                            let item = glib.DataItem.new();
-                            item.link = linkUrl;
-                            item.title = 'R' + (i+1);
-                            item.data = {
-                                url: d.file
-                            };
-                            items.push(item);
-                        }
-                        return items;
-                    }
-                }
-            } else {
-                console.log('no src.');
-            }
-        } else {
-            console.log('no!');
         }
-
+        if (selText) {
+            let items = [];
+            let data = await this.processAjax(selText);
+            for (let source of data.sources) {
+                let item = glib.DataItem.new();
+                item.title = source.label;
+                item.link = url;
+                item.data = {
+                    url: source.src,
+                    headers: {
+                        referer: url,
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
+                        Accept: '*/*',
+                        'Accept-Encoding': 'deflate, gzip'
+                    }
+                };
+                items.push(item);
+            }
+            return items;
+        }
         return [];
     }
 
@@ -174,5 +96,9 @@ class VideoCollection extends Collection {
 }
 
 module.exports = function(item) {
-    return VideoCollection.new(item);
+    let link = item.link;
+    if (link.match(/quickvideo\.net/)) {
+        return QuickVideoCollection.new(item);
+    } 
+    return null;
 };

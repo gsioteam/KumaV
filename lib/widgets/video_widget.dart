@@ -34,13 +34,18 @@ enum ItemPageStatus {
   Hidden
 }
 
+class DetailData {
+  String url;
+  Map<String, String> headers;
+}
+
 abstract class VideoData {
   List<String> get list;
 
   String get key;
   int get initialIndex;
 
-  Future<String> load(int index);
+  Future<DetailData> load(int index);
 }
 
 class Bound {
@@ -337,7 +342,7 @@ class VideoInnerState extends State<VideoInner> {
     setState(() { });
   }
 
-  Cancelable<String> loadCancelable;
+  Cancelable<DetailData> loadCancelable;
 
   void _play(int index) async {
     loadCancelable?.cancel();
@@ -345,8 +350,8 @@ class VideoInnerState extends State<VideoInner> {
     if ((widget.data?.list?.length ?? 0) > index) {
       loadCancelable = Cancelable(widget.data.load(index));
       try {
-        String url = await loadCancelable.future;
-        Uri uri = Uri.parse(url);
+        DetailData detail = await loadCancelable.future;
+        Uri uri = Uri.parse(detail.url);
         if (!uri.hasScheme) {
           throw new Exception("Wrong url");
         }
@@ -359,8 +364,9 @@ class VideoInnerState extends State<VideoInner> {
           );
         }
         // danmakuController?.dispose();
-        controller = KumaPlayerController.network(url,
+        controller = KumaPlayerController.network(detail.url,
           startTime: startTime,
+          headers: detail.headers
         );
         // danmakuController = GitIssueDanmakuController(
         //   controller,

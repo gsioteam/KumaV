@@ -1,6 +1,6 @@
 {
-    "name": "theofficetv.com",
-    "url": "https://theofficetv.com/",
+    "name": "javfull.net",
+    "url": "https://javfull.net/",
     "index": "index.js",
     "collections": [
         "details.js",
@@ -9,21 +9,19 @@
     "search": {
         "src": "search.js",
         "data": {
-            "url": "https://theofficetv.com/search-for-movies-tv-shows-or-people?q={0}"
+            "url": "https://javfull.net/{1}?s={0}"
         }
     },
     "categories": [
         {
-            "title": "Movies",
-            "id": "movies",
-            "url": "https://theofficetv.com/movies",
-            "pageUrl": "https://theofficetv.com/titles/paginate?_token={1}&perPage=18&page={0}&order=mc_num_of_votesDesc&type=movie&minRating=&maxRating="
+            "title": "Home",
+            "id": "home",
+            "url": "https://javfull.net/page/{0}/"
         }, 
         {
-            "title": "Series",
-            "id": "series",
-            "url": "https://theofficetv.com/series",
-            "pageUrl": "https://theofficetv.com/titles/paginate?_token={1}&perPage=18&page={0}&order=mc_num_of_votesDesc&type=series&minRating=&maxRating="
+            "title": "Top",
+            "id": "top",
+            "url": "https://javfull.net/top-jav-movies-this-month/"
         }
     ]
 }

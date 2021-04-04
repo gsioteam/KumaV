@@ -19,7 +19,7 @@ class Fetcher {
             }
             let cf_clearance = this.settings.get('cf_clearance');
             if (cf_clearance) {
-                // console.log('cf_clearance ' + cf_clearance);
+                console.log('cf_clearance ' + cf_clearance);
                 req.setHeader('cookie', `cf_clearance=${cf_clearance};`);
             }
             if (this.body) {
@@ -63,7 +63,7 @@ class ProcessBrowser {
 
     run() {
         return new Promise((resolve, reject) => {
-            let browser = glib.Browser.new(this.url, "cookie: cf_clearance", false);
+            let browser = glib.Browser.new(this.url, "cookie: cf_clearance", true);
             this.callback = glib.Callback.fromFunction((map) => {
                 let error = browser.getError();
                 console.log('Error ' + error);

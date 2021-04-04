@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 
 import 'proxy_server.dart';
@@ -73,11 +74,11 @@ class LoadItem {
     } else {
       item.onComplete = _onComplete;
       var response = await item.getResponse();
-      print("URL: ${response.request.url}");
+      print("URL: ${response.request.uri}");
       print("headers: ${response.headers}");
       print("statusCode: ${response.statusCode}");
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (end < 0) end = response.contentLength;
+        if (end < 0) end = int.tryParse(response.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
         int BLK_SIZE = 4096;
         for (int offset = start; offset < end; offset += BLK_SIZE) {
           // print("[S]read $cacheKey ($offset-${math.min(end, offset + BLK_SIZE)})");

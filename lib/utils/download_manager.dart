@@ -12,6 +12,7 @@ import 'package:glib/main/project.dart';
 import 'package:kuma_player/video_downloader.dart';
 import 'package:kumav/main_settings_page.dart';
 import 'package:kumav/utils/video_load_item.dart';
+import 'package:kumav/widgets/video_widget.dart';
 import '../configs.dart';
 
 class DownloadItemData {
@@ -22,6 +23,7 @@ class DownloadItemData {
   String videoUrl;
   String displayTitle;
   String indexLink;
+  Map<String, String> headers;
 
   DownloadItemData({
     this.title,
@@ -31,6 +33,7 @@ class DownloadItemData {
     this.videoUrl,
     this.displayTitle,
     this.indexLink,
+    this.headers,
   });
 }
 
@@ -66,6 +69,7 @@ class DownloadQueueItem {
     if (_info == null) {
       if (data.data != null) {
         Map<String, dynamic> map = jsonDecode(data.data);
+        Map<String, dynamic> headers = map["headers"] as Map<String, dynamic>;
         _info = DownloadItemData(
           title: map["title"],
           picture: map["picture"],
@@ -74,6 +78,7 @@ class DownloadQueueItem {
           videoUrl: map["videoUrl"],
           displayTitle: map["displayTitle"],
           indexLink: map["indexLink"],
+          headers: headers?.cast<String, String>()
         );
       } else {
         _info = DownloadItemData();
@@ -167,11 +172,13 @@ class DownloadQueueItem {
           }
           var loadData = data[index];
           try {
-            String url = await loadData.load();
+            DetailData detail = await loadData.load();
+            String url = detail.url;
             if (info.videoUrl != url) {
               item.data['url'] = url;
               loadItem.context.saveData();
               info.videoUrl = url;
+              info.headers = detail.headers;
               this.data.release();
               this.data = item.saveToCollection(collection_download, {
                 "title": info.title,
@@ -181,6 +188,7 @@ class DownloadQueueItem {
                 "videoUrl": info.videoUrl,
                 "displayTitle": info.displayTitle,
                 "indexLink": info.indexLink,
+                "headers": info.headers
               }).control();
               downloader.dispose();
               downloader = VideoDownloader(info.videoUrl);
@@ -272,6 +280,7 @@ class DownloadManager {
         "videoUrl": input.videoUrl,
         "displayTitle": input.displayTitle,
         "indexLink": input.indexLink,
+        "headers": input.headers,
       });
       DownloadQueueItem queueItem = DownloadQueueItem(data, this);
       if (queueItem != null)

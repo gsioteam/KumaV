@@ -36,6 +36,7 @@ extern "C" void initGlib() {
     ClassDB::reg<gc::_Map>();
     ClassDB::reg<gc::_Array>();
     ClassDB::reg<gc::_Callback>();
+    ClassDB::reg<gc::FileData>();
     ClassDB::reg<gs::GitRepository>();
     ClassDB::reg<gs::DartPlatform>();
     ClassDB::reg<gs::DartRequest>();

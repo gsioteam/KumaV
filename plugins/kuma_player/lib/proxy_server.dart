@@ -15,7 +15,6 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as platform;
 import 'package:mime/mime.dart';
-import 'package:http/http.dart' as http;
 import 'dart:math' as math;
 import 'package:path/path.dart' as path;
 
@@ -82,13 +81,14 @@ abstract class ProxyItem {
   List<void Function(int)> _onSpeeds = [];
   List<void Function()> _onBuffered = [];
   LoadItem _lastItem;
+  Map<String, String> headers;
 
   List<LoadItem> _loadItems = List();
   Map<String, LoadItem> _loadItemIndex = Map();
 
   List<LoadItem> get loadItems => _loadItems;
 
-  ProxyItem._(this._server, String url) {
+  ProxyItem._(this._server, String url, this.headers) {
     int index = url.lastIndexOf("/");
     if (index < 0) {
       throw "Wrong url $_url";
@@ -114,7 +114,7 @@ abstract class ProxyItem {
     _speed += length;
   }
 
-  factory ProxyItem(ProxyServer server, String url) {
+  factory ProxyItem(ProxyServer server, String url, {Map<String, String> headers}) {
     int idx = url.indexOf('?');
     String raw;
     if (idx >= 0) {
@@ -131,9 +131,9 @@ abstract class ProxyItem {
       ext = filename.substring(idx + 1).toLowerCase();
     }
     if (ext == "m3u8") {
-      return HlsProxyItem._(server, url);
+      return HlsProxyItem._(server, url, headers: headers);
     } else {
-      return SingleProxyItem._(server, url);
+      return SingleProxyItem._(server, url, headers: headers);
     }
   }
 
@@ -230,13 +230,13 @@ class HlsProxyItem extends ProxyItem {
 
   Map<Uri, String> cached = Map();
 
-  HlsProxyItem._(ProxyServer server, String url) : super._(server, url) {
+  HlsProxyItem._(ProxyServer server, String url, {Map<String, String> headers}) : super._(server, url, headers) {
     String cacheKey = "$key/$entry";
     addLoadItem(LoadItem(
       proxyItem: this,
       weight: 1,
       cacheKey: cacheKey,
-      builder: () => _queue.start(url),
+      builder: () => _queue.start(url, headers: headers),
       data: url
     )..onLoadData = _receiveData);
     _ProxyData proxyData = _files[entry];
@@ -276,7 +276,7 @@ class HlsProxyItem extends ProxyItem {
         proxyItem: this,
         cacheKey: cacheKey,
         weight: 1,
-        builder: () => _queue.start(url),
+        builder: () => _queue.start(url, headers: headers),
         data: url
       );
       item.onLoadData = _receiveData;
@@ -477,7 +477,7 @@ class SingleProxyItem extends ProxyItem {
     return _cacheKey;
   }
 
-  SingleProxyItem._(ProxyServer server, String url) : super._(server, url) {
+  SingleProxyItem._(ProxyServer server, String url, {Map<String, String> headers}) : super._(server, url, headers) {
     _rawUrl = url;
     String indexKey = "$cacheKey/index";
     addLoadItem(LoadItem(
@@ -491,21 +491,23 @@ class SingleProxyItem extends ProxyItem {
   }
 
   RequestItem requestHEAD(String url) {
+    Map<String, String> map = {};
+    map.addAll(headers);
+    map['Range'] = "bytes=0-";
     return _queue.start(url,
       key: url + "#index#",
       method: "HEAD",
-      headers: {
-        "Range": "bytes=0-"
-      }
+      headers: map
     );
   }
 
   RequestItem requestBody(String url, int index, _RangeData range) {
+    Map<String, String> map = {};
+    map.addAll(headers);
+    map['Range'] = "bytes=${range.start}-${range.end - 1}";
     return _queue.start(url,
       key: url + "#$index#",
-      headers: {
-        "Range": "bytes=${range.start}-${range.end - 1}"
-      }
+      headers: map
     );
   }
 
@@ -717,11 +719,11 @@ class ProxyServer {
     _completer.complete(_server);
   }
 
-  ProxyItem get(String url) {
+  ProxyItem get(String url, {Map<String, String> headers}) {
     String key = _calculateKey(url);
     ProxyItem item = items[key];
     if (item == null) {
-      item = ProxyItem(this, url);
+      item = ProxyItem(this, url, headers: headers);
       items[key] = item;
       item._server = this;
     }

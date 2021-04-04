@@ -70,18 +70,23 @@ class KumaPlayerController extends ValueNotifier<VideoPlayerValue> with WidgetsB
 
   KumaPlayerController.network(String dataSource,
       {VideoFormat formatHint, this.startTime,
+        Map<String, String> headers,
         Future<ClosedCaptionFile> closedCaptionFile,
         VideoPlayerOptions videoPlayerOptions}) : super(VideoPlayerValue(duration: Duration.zero)) {
-    _startUrl(dataSource, (url) {
-      _playerController = VideoPlayerController.network(
-        url,
-        formatHint: formatHint,
-        closedCaptionFile: closedCaptionFile,
-        videoPlayerOptions: videoPlayerOptions
-      );
-      _playerController.addListener(_updateValue);
-      _playerController.initialize().then((value) => _ready());
-    });
+    _startUrl(
+      url: dataSource,
+      headers: headers,
+      callback: (url) {
+        _playerController = VideoPlayerController.network(
+            url,
+            formatHint: formatHint,
+            closedCaptionFile: closedCaptionFile,
+            videoPlayerOptions: videoPlayerOptions
+        );
+        _playerController.addListener(_updateValue);
+        _playerController.initialize().then((value) => _ready());
+      }
+    );
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -135,14 +140,18 @@ class KumaPlayerController extends ValueNotifier<VideoPlayerValue> with WidgetsB
     });
   }
 
-  void _startUrl(String url, void Function(String) cb) async {
-    ProxyServer server = await ProxyServer.instance;
-    _proxyItem = server.get(url);
+  void _startUrl({
+    String url,
+    void Function(String) callback,
+    Map<String, String> headers,
+  }) async {
+    ProxyServer server = ProxyServer.instance;
+    _proxyItem = server.get(url, headers: headers);
     proxyItem.retain();
     for (var cb in _onSpeeds) proxyItem.addOnSpeed(cb);
     for (var cb in _onBuffered) proxyItem.addOnBuffered(cb);
     if (!_disposed)
-      cb("http://localhost:${(await server.server).port}/${proxyItem.key}/${proxyItem.entry}");
+      callback("http://localhost:${(await server.server).port}/${proxyItem.key}/${proxyItem.entry}");
   }
 
   void _updateValue() {

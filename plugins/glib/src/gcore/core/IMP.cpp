@@ -147,8 +147,7 @@ b8_vector FileData::readAll() {
     if (file) {
 #define BUF_SIZE (8 * 1024)
         b8_vector res;
-        size_t s = ftell(file);
-        fseek(file,0,SEEK_END);
+        fseek(file,0, SEEK_SET);
         size_t readed = 0;
         uint8_t buf[BUF_SIZE];
         while ((readed = fread(buf, 1, BUF_SIZE, file)) > 0) {
@@ -156,7 +155,7 @@ b8_vector FileData::readAll() {
             res.resize(size + readed);
             memcpy(res.data() + size, buf, readed);
         }
-        fseek(file,s,SEEK_END);
+        fseek(file,0, SEEK_END);
         return res;
     }
     return b8_vector();

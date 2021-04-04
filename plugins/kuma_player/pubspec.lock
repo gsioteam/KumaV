@@ -57,6 +57,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.5"
+  dio:
+    dependency: "direct main"
+    description:
+      name: dio
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.10"
+  dio_http2_adapter:
+    dependency: "direct main"
+    description:
+      name: dio_http2_adapter
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.1"
   fake_async:
     dependency: transitive
     description:
@@ -100,13 +114,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  http:
-    dependency: "direct main"
+  http2:
+    dependency: transitive
     description:
-      name: http
+      name: http2
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.2"
+    version: "1.0.1"
   http_multi_server:
     dependency: "direct main"
     description:
@@ -191,13 +205,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.0.4+3"
-  pedantic:
-    dependency: transitive
-    description:
-      name: pedantic
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.10.0"
   platform:
     dependency: transitive
     description:

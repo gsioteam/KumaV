@@ -137,16 +137,16 @@ class _ItemVideoData extends VideoData {
 
   List<VideoLoadData> data;
   List<String> list;
-  String currentUrl;
+  DetailData currentData;
   int currentIndex;
   int initialIndex;
 
   @override
-  Future<String> load(int index) async {
-    currentUrl = null;
-    currentUrl = await data[index].load();
+  Future<DetailData> load(int index) async {
+    currentData = null;
+    currentData = await data[index].load();
     currentIndex = index;
-    return currentUrl;
+    return currentData;
   }
 
   String key;
@@ -212,6 +212,7 @@ class _ProcessResult {
   Error error;
   _DownloadItem item;
   String videoUrl;
+  Map<String, String> headers;
 }
 
 class _ProcessPipe {
@@ -383,7 +384,9 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
       result.item = item;
       if (result.error == null) {
         try {
-          result.videoUrl = await result.data.load();
+          var detail = await result.data.load();
+          result.videoUrl = detail.url;
+          result.headers = detail.headers;
         } catch (e) {
           item.error = e;
         }
@@ -438,6 +441,7 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
             picture: detailItem.picture,
             link: detailItem.link,
             videoUrl: result.videoUrl,
+            headers: result.headers,
             displayTitle: displayTitle,
             indexLink: chapterData.link,
           ));

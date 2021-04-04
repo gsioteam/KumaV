@@ -10,61 +10,9 @@ import 'package:glib/core/callback.dart';
 import '../core/core.dart';
 import '../core/data.dart';
 import '../core/gmap.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-
-class ExtendsRequest {
-  void Function(int bytes, int totalBytes) onProgress;
-
-  setOnProgress(void Function(int bytes, int totalBytes) op) {
-    onProgress = op;
-    return this;
-  }
-}
-
-class MultipartRequest extends http.MultipartRequest with ExtendsRequest {
-  MultipartRequest(String method, Uri uri) : super(method, uri);
-
-  http.ByteStream finalize() {
-    final byteStream = super.finalize();
-    if (onProgress == null) return byteStream;
-
-    final total = this.contentLength;
-    int bytes = 0;
-
-    final t = StreamTransformer.fromHandlers(
-      handleData: (List<int> data, EventSink<List<int>> sink) {
-        bytes += data.length;
-        onProgress(bytes, total);
-        sink.add(data);
-      },
-    );
-    final stream = byteStream.transform(t);
-    return http.ByteStream(stream);
-  }
-}
-
-class UrlRequest extends http.Request with ExtendsRequest {
-  UrlRequest(String method, Uri uri) : super(method, uri);
-
-  http.ByteStream finalize() {
-    final byteStream = super.finalize();
-    if (onProgress == null) return byteStream;
-
-    final total = this.contentLength;
-    int bytes = 0;
-
-    final t = StreamTransformer.fromHandlers(
-      handleData: (List<int> data, EventSink<List<int>> sink) {
-        bytes += data.length;
-        onProgress(bytes, total);
-        sink.add(data);
-      },
-    );
-    final stream = byteStream.transform(t);
-    return http.ByteStream(stream);
-  }
-}
+import 'package:dio/dio.dart';
+import 'package:dio_http2_adapter/dio_http2_adapter.dart';
 
 enum BodyType {
   Raw,
@@ -79,7 +27,7 @@ class Request extends Base {
   }
 
   Uint8List body;
-  http.BaseRequest request;
+  Dio dio;
   int uploadNow;
   int uploadTotal;
   int downloadNow;
@@ -133,24 +81,22 @@ class Request extends Base {
   _release() {
     release();
   }
+  Uri uri;
+  BodyType type;
 
   setup(String method, String url, int type) {
-    switch (type) {
-      case 0: {
-        request = UrlRequest(method, Uri.parse(url)).setOnProgress(uploadProgress);
-        break;
-      }
-      case 1: {
-        request = MultipartRequest(method, Uri.parse(url)).setOnProgress(uploadProgress);
-        break;
-      }
-      case 2: {
-        request = UrlRequest(method, Uri.parse(url)).setOnProgress(uploadProgress);
-        break;
-      }
-    }
+    uri = Uri.parse(url);
+    this.type = BodyType.values[type];
+    dio = Dio(
+      BaseOptions(
+        method: method,
+        responseType: ResponseType.stream
+      )
+    )..httpClientAdapter = Http2Adapter(ConnectionManager(
+      idleTimeout: 10000,
+      onClientCreate: (_, config) => config.onBadCertificate = (_) => true,
+    ));;
 
-    request.followRedirects = true;
     control();
   }
 
@@ -162,23 +108,17 @@ class Request extends Base {
 
   int getStatusCode() => statusCode;
 
+  Map<String, String> headers = {};
   setHeader(String name, String value) {
-    request.headers[name] = value;
+    headers[name] = value;
   }
 
   setBody(Pointer ptr, int length) {
-    if (request is UrlRequest) {
-      var req = request as UrlRequest;
-      Uint8List buf = ptr.cast<Uint8>().asTypedList(length);
-      String str = Utf8.fromUtf8(ptr.cast<Utf8>());
-      print(str);
-      str = Utf8Decoder().convert(buf);
-      print(str);
-      // req.body = str;
-      Uint8List nbuf = new Uint8List(buf.length);
-      nbuf.setAll(0, buf);
-      req.bodyBytes = nbuf;
-    }
+
+    Uint8List buf = ptr.cast<Uint8>().asTypedList(length);
+    // req.body = str;
+    body = new Uint8List(buf.length);
+    body.setAll(0, buf);
   }
 
   setOnUploadProgress(Callback cb) {
@@ -238,7 +178,7 @@ class Request extends Base {
     _started = true;
     try {
       if (cacheResponse) {
-        Stream<FileResponse> stream = DefaultCacheManager().getFileStream(request.url.toString(), headers: request.headers, withProgress: true);
+        Stream<FileResponse> stream = DefaultCacheManager().getFileStream(uri.toString(), headers: headers, withProgress: true);
         await for (FileResponse res in stream) {
           if (res is DownloadProgress) {
             downloadTotal = res.totalSize;
@@ -249,18 +189,26 @@ class Request extends Base {
           }
         }
       } else {
-        http.StreamedResponse res = await request.send();
+        Response<ResponseBody> res = await dio.requestUri<ResponseBody>(
+          uri,
+          data: body,
+          options: Options(
+            headers: headers,
+          ),
+        );
         if (_canceled) return;
-        downloadTotal = res.contentLength;
+        downloadTotal = int.tryParse(res.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
         statusCode = res.statusCode;
         responseHeader?.release();
-        responseHeader = GMap.allocate(res.headers);
-        downloadTotal = res.contentLength;
+        responseHeader = GMap.allocate({});
+        res.headers.map.forEach((key, value) {
+          responseHeader[key] = value.join(',');
+        });
         onResponse?.invoke([]);
 
         downloadNow = 0;
         List<int> receiveBody = [];
-        _subscription = res.stream.listen((value) {
+        _subscription = res.data.stream.listen((value) {
           downloadNow += value.length;
           receiveBody.addAll(value);
           onDownloadProgress?.invoke([downloadNow, downloadTotal]);

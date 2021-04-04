@@ -5,43 +5,24 @@ const crossCloudfare = require('./cross_cloudfare');
 class DetailsCollection extends Collection {
     
     async fetch(url) {
-        let res = await crossCloudfare({
-            url,
-            settings: this.settings
-        });
-        let doc = res.document;
-
-        let iframe = doc.querySelector('iframe');
-        if (iframe) {
-            let item = glib.DataItem.new();
-            item.title = 'Video';
-            item.link = url;
-            return [item];
-        } else {
-            let seasons = doc.querySelectorAll('.seasons > a');
-            if (seasons.length > 0) {
-                let items = [];
-                for (let snode of seasons) {
-                    let title = snode.text;
-                    let res = await crossCloudfare({
-                        url: snode.attr('href'), 
-                        settings: this.settings
-                    });
-                    let doc = res.document;
-                    let links = doc.querySelectorAll('ul#episode-list > li.media');
-                    for (let node of links) {
-                        let item = glib.DataItem.new();
-                        item.link = node.querySelector('a').attr('href');
-                        let heading = node.querySelector('.media-heading');
-                        item.title = heading.text;
-                        item.subtitle = title;
-                        items.push(item);
-                    }
+        let doc = await super.fetch(url);
+        let lists = doc.querySelectorAll('.listserver .listep');
+        let items = [];
+        for (let list of lists) {
+            let title = list.querySelector('.ep').text.trim().replace(':', '');
+            let links = list.querySelectorAll('a');
+            for (let link of links) {
+                let url = link.attr('data-link');
+                if (url.match(/quickvideo\.net/)) {
+                    let item = glib.DataItem.new();
+                    item.title = link.text;
+                    item.subtitle = title;
+                    item.link = url;
+                    items.push(item);
                 }
-                return items;
             }
         }
-        return [];
+        return items;
     }
 
     reload(_, cb) {

@@ -8,6 +8,7 @@ import 'package:glib/main/data_item.dart';
 import 'dart:async';
 
 import 'package:glib/main/project.dart';
+import 'package:kumav/widgets/video_widget.dart';
 
 import '../configs.dart';
 
@@ -16,12 +17,42 @@ class VideoLoadData {
   VideoLoadItem loadItem;
   String name;
 
-  Future<String> load() async {
+  DetailData fromMap(GMap data) {
+    DetailData detail = DetailData();
+    String url = data["url"];
+    var headers = data["headers"];
+    if (headers is GMap) {
+      detail.headers = Map();
+      headers.forEach((key, value) {
+        if (value is String)
+          detail.headers[key] = value;
+      });
+    }
+    var query = data["query"];
+    if (query is GMap) {
+      var uri = Uri.parse(url);
+      Map<String, String> map = {};
+      uri.queryParameters?.forEach((key, value) {
+        map[key] = value;
+      });
+      query.forEach((key, value) {
+        map[key] = value.toString();
+      });
+      var newUri = uri.replace(
+        queryParameters: map
+      );
+      url = newUri.toString();
+    }
+    detail.url = url;
+    return detail;
+  }
+
+  Future<DetailData> load() async {
     var data = loadItem.context.data[index].data;
     if (data is GMap) {
       var url = data["url"];
       if (url is String && Uri.tryParse(url)?.hasScheme == true) {
-        return url;
+        return fromMap(data);
       } else {
         var handler = data["handler"];
         if (handler is String) {
@@ -45,7 +76,7 @@ class VideoLoadData {
             data.release();
             success.release();
             failed.release();
-            return url;
+            return fromMap(data);
           } catch (e) {
             data.release();
             success.release();

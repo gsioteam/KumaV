@@ -1,11 +1,13 @@
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:math' as math;
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:dio_http2_adapter/dio_http2_adapter.dart';
+import 'package:flutter/foundation.dart';
 
 typedef LoadCallback = void Function(List<List<int>> chunks);
-typedef ResponseCallback = void Function(http.StreamedResponse response);
+typedef ResponseCallback = void Function(Response<ResponseBody> response);
 typedef CompleteCallback = void Function(List<List<int>> chunks);
 
 class _LoadListener {
@@ -22,7 +24,8 @@ class RequestItem {
   Set<_LoadListener> _listeners = Set();
   Set<ResponseCallback> _responseCallbacks = {};
   int _length = 0;
-  http.StreamedResponse _response;
+  Dio dio;
+  Response<ResponseBody> _response;
   Map<String, String> headers;
   String method;
   CompleteCallback onComplete;
@@ -58,15 +61,30 @@ class RequestItem {
   }
 
   void _start() async {
-    var request = http.Request(method, Uri.parse(url));
-    if (headers != null) request.headers.addAll(headers);
-    var response = await request.send();
-    _response = response;
+    Uri uri = Uri.parse(url);
+    dio = Dio(BaseOptions(
+      baseUrl: "${uri.scheme}://${uri.host}",
+      headers: headers,
+      responseType: ResponseType.stream
+    ))..httpClientAdapter = Http2Adapter(ConnectionManager(
+      idleTimeout: 10000,
+      onClientCreate: (_, config) => config.onBadCertificate = (_) => true,
+    ));
+    _response = await dio.request<ResponseBody>(
+      uri.path,
+      queryParameters: uri.queryParameters,
+    );
     _receiveResponse();
-    await for (var chunk in response.stream) {
+    await for (var chunk in _response.data.stream) {
       _receive(chunk);
     }
     _complete();
+  }
+
+  Stream<List<int>> streamChunks() async* {
+    for (var chunk in chunks) {
+      yield chunk;
+    }
   }
 
   Future<List<List<int>>> read([int reach]) {
@@ -93,12 +111,12 @@ class RequestItem {
     return newChunks.expand<int>((element) => element).toList();
   }
 
-  Future<http.StreamedResponse> getResponse() {
+  Future<Response<ResponseBody>> getResponse() {
     if (_response != null) {
       return SynchronousFuture(_response);
     }
 
-    Completer<http.StreamedResponse> completer = Completer();
+    Completer<Response<ResponseBody>> completer = Completer();
     _responseCallbacks.add((response) {
       completer.complete(response);
     });
