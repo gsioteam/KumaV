@@ -213,7 +213,7 @@ class Request extends Base {
           receiveBody.addAll(value);
           onDownloadProgress?.invoke([downloadNow, downloadTotal]);
         });
-        await _subscription.asFuture().timeout(Duration(seconds: _timeout == null ? 30 : _timeout), onTimeout: () {
+        await _subscription.asFuture().timeout(Duration(milliseconds: _timeout ?? 30000), onTimeout: () {
           if (!_canceled) {
             throw new Exception("Timeout");
           }
