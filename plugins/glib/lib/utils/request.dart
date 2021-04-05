@@ -191,9 +191,13 @@ class Request extends Base {
       } else {
         Response<ResponseBody> res = await dio.requestUri<ResponseBody>(
           uri,
-          data: body,
+          data: body ?? Uint8List(0),
           options: Options(
             headers: headers,
+            followRedirects: true,
+            requestEncoder: (request, options) {
+              return options.data;
+            },
           ),
         );
         if (_canceled) return;

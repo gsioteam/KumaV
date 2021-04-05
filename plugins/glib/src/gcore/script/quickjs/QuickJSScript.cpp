@@ -1011,7 +1011,14 @@ gc::Variant QuickJSCallback::invoke(const gc::Array &params) {
             argv[i] = script->toValue(params.at(i));
         }
         JSValue val = JS_Call(context, value, JS_NULL, len, argv.data());
-        Variant ret = script->toVariant(val);
+        Variant ret;
+        if (JS_IsException(val)) {
+            JSValue ex = JS_GetException(context);
+            PrintError(context, ex, "[Eval]");
+            JS_FreeValue(context, ex);
+        } else {
+            ret = script->toVariant(val);
+        }
         for (int i = 0; i < len; ++i) {
             JS_FreeValue(context, argv[i]);
         }

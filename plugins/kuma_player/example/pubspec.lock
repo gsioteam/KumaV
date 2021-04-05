@@ -70,14 +70,14 @@ packages:
       name: dio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.10"
+    version: "4.0.0"
   dio_http2_adapter:
     dependency: transitive
     description:
-      name: dio_http2_adapter
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.1"
+      path: "../../http2_adapter"
+      relative: true
+    source: path
+    version: "2.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -127,7 +127,7 @@ packages:
       name: http2
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.1"
+    version: "2.0.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -141,7 +141,7 @@ packages:
       name: http_parser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.4"
+    version: "4.0.0"
   intl:
     dependency: transitive
     description:
@@ -260,7 +260,7 @@ packages:
       name: shelf
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.7.9"
+    version: "1.1.0"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -272,7 +272,7 @@ packages:
       name: source_span
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.1"
+    version: "1.8.0"
   stack_trace:
     dependency: transitive
     description:
@@ -386,5 +386,5 @@ packages:
     source: hosted
     version: "0.1.0"
 sdks:
-  dart: ">=2.12.0-259.9.beta <3.0.0"
+  dart: ">=2.12.0 <3.0.0"
   flutter: ">=1.24.0-0"

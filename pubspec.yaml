@@ -36,9 +36,7 @@ dependencies:
   fluttertoast: ^4.0.0
   flutter_picker: ^1.1.5
   flutter_svg_provider:
-    git:
-      url: https://github.com/gsioteam/flutter_svg_provider.git
-      ref: 6675ea2d0ea021c1acf3d267a154027879bb42a5
+    path: "./plugins/flutter_svg_provider"
   scroll_to_index: ^1.0.6
   gitissues:
     path: "./plugins/gitissues"

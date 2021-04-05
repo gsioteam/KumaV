@@ -57,10 +57,9 @@ string Data::text() {
 
 Ref<Data> Data::fromString(const std::string &str) {
     size_t len = str.size();
-    char *chs = (char *)malloc(len + 1);
+    char *chs = (char *)malloc(len);
     memcpy(chs, str.data(), len);
-    chs[len] = 0;
-    return new_t(BufferData, chs, len + 1, BufferData::Retain);
+    return new_t(BufferData, chs, len, BufferData::Retain);
 }
 
 void BufferData::seek(size_t seek, int type) {

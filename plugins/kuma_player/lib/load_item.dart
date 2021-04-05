@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -74,18 +75,49 @@ class LoadItem {
     } else {
       item.onComplete = _onComplete;
       var response = await item.getResponse();
-      print("URL: ${response.request.uri}");
+      print("URL: ${response.requestOptions.uri}");
       print("headers: ${response.headers}");
       print("statusCode: ${response.statusCode}");
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (end < 0) end = int.tryParse(response.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
-        int BLK_SIZE = 4096;
-        for (int offset = start; offset < end; offset += BLK_SIZE) {
-          // print("[S]read $cacheKey ($offset-${math.min(end, offset + BLK_SIZE)})");
-          var buf = await item.readPart(offset, math.min(end, offset + BLK_SIZE));
-          // print("[E]read $cacheKey (${buf.length})");
-          onLoadData?.call(buf.length);
-          yield buf;
+        int contentLength = int.tryParse(response.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
+        if (contentLength > 0) {
+          if (end < 0) end = int.tryParse(response.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
+          int BLK_SIZE = 4096;
+          for (int offset = start; offset < end; offset += BLK_SIZE) {
+            // print("[S]read $cacheKey ($offset-${math.min(end, offset + BLK_SIZE)})");
+            var buf = await item.readPart(offset, math.min(end, offset + BLK_SIZE));
+            // print("[E]read $cacheKey (${buf.length})");
+            onLoadData?.call(buf.length);
+            yield buf;
+          }
+        } else {
+          Future<List<List<int>>> wait() {
+            Completer<List<List<int>>> completer = Completer();
+            item.addListener(LoadListener((chunks) {
+              completer.complete(chunks);
+            }));
+            return completer.future;
+          }
+          var chunks = await wait();
+          int readed = 0;
+          for (var chunk in chunks) {
+            if (end > 0) {
+              int len = chunk.length;
+              if (readed + len > end) {
+                var buf = chunk.sublist(0, end - readed);
+                onLoadData?.call(buf.length);
+                yield buf;
+                break;
+              } else {
+                readed += chunk.length;
+                onLoadData?.call(chunk.length);
+                yield chunk;
+              }
+            } else {
+              onLoadData?.call(chunk.length);
+              yield chunk;
+            }
+          }
         }
       } else {
         throw "Request $data failed code:${response.statusCode}";

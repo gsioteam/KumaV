@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:convert/convert.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 typedef HashMethod = String Function(String);
 
@@ -46,17 +46,24 @@ Future<String> _request(Uri uri, {
   String body,
   GitIssues issues,
 }) async {
-  http.Request request = http.Request(method, uri);
-  request.headers["Accept"] = accept;
+  Dio dio = Dio();
+  Map<String, dynamic> headers = {
+    "Accept": accept
+  };
   if (issues?.hasAccessToken == true) {
-    request.headers["Authorization"] = "token ${issues.storage["access_token"]}";
+    headers["Authorization"] = "token ${issues.storage["access_token"]}";
   }
-  if (body != null) {
-    request.body = body;
-  }
-  http.StreamedResponse res = await request.send();
+  Response<String> res = await dio.requestUri(
+    uri,
+    data: body,
+    options: Options(
+      method: method,
+      headers: headers,
+      responseType: ResponseType.plain
+    )
+  );
 
-  return await res.stream.bytesToString();
+  return res.data;
 }
 
 class GitIssues {

@@ -10,18 +10,18 @@ typedef LoadCallback = void Function(List<List<int>> chunks);
 typedef ResponseCallback = void Function(Response<ResponseBody> response);
 typedef CompleteCallback = void Function(List<List<int>> chunks);
 
-class _LoadListener {
+class LoadListener {
   int reach;
   LoadCallback cb;
 
-  _LoadListener(this.cb, [this.reach]);
+  LoadListener(this.cb, [this.reach]);
 }
 
 class RequestItem {
   List<List<int>> chunks = List();
   String url;
   RequestQueue queue;
-  Set<_LoadListener> _listeners = Set();
+  Set<LoadListener> _listeners = Set();
   Set<ResponseCallback> _responseCallbacks = {};
   int _length = 0;
   Dio dio;
@@ -29,13 +29,15 @@ class RequestItem {
   Map<String, String> headers;
   String method;
   CompleteCallback onComplete;
+  bool _isComplete = false;
+  bool get isComplete => _isComplete;
 
   RequestItem(this.url, this.queue);
 
   void _receive(List<int> chunk) {
     chunks.add(chunk);
     _length += chunk.length;
-    Set<_LoadListener> needRemove = {};
+    Set<LoadListener> needRemove = {};
     _listeners.forEach((element) {
       if (element.reach != null && element.reach <= _length) {
         element.cb?.call(chunks);
@@ -46,6 +48,7 @@ class RequestItem {
   }
 
   void _complete() {
+    _isComplete = true;
     _listeners.forEach((element) {
       element.cb?.call(chunks);
     });
@@ -68,7 +71,6 @@ class RequestItem {
       responseType: ResponseType.stream
     ))..httpClientAdapter = Http2Adapter(ConnectionManager(
       idleTimeout: 10000,
-      onClientCreate: (_, config) => config.onBadCertificate = (_) => true,
     ));
     _response = await dio.request<ResponseBody>(
       uri.path,
@@ -81,6 +83,14 @@ class RequestItem {
     _complete();
   }
 
+  void addListener(LoadListener listener) {
+    if (isComplete) {
+      listener.cb?.call(chunks);
+    } else {
+      _listeners.add(listener);
+    }
+  }
+
   Stream<List<int>> streamChunks() async* {
     for (var chunk in chunks) {
       yield chunk;
@@ -91,7 +101,7 @@ class RequestItem {
     if (reach != null && _length >= reach)
       return SynchronousFuture(chunks);
     Completer<List<List<int>>> completer = Completer();
-    _listeners.add(_LoadListener((chunks) {
+    _listeners.add(LoadListener((chunks) {
       completer.complete(chunks);
     }, reach));
     return completer.future;

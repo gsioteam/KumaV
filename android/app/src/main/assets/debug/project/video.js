@@ -21,12 +21,13 @@ class QuickVideoCollection extends Collection {
                     req.setBody(glib.Data.fromString(arr.join('&')));
                     req.setHeader('content-type', 'application/x-www-form-urlencoded');
                     this.callback = glib.Callback.fromFunction(() => {
+                        console.log('complete!');
                         let body = req.getResponseBody();
                         d.success(body.text(), 'OK');
                     });
                     req.setOnComplete(this.callback);
                     req.start();
-                    console.log('start');
+                    console.log('start ' + JSON.stringify(d));
                 } catch (e) {
                     reject(e);
                 }
@@ -68,9 +69,9 @@ class QuickVideoCollection extends Collection {
                     url: source.src,
                     headers: {
                         referer: url,
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
-                        Accept: '*/*',
-                        'Accept-Encoding': 'deflate, gzip'
+                        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
+                        accept: '*/*',
+                        'accept-encoding': 'deflate, gzip'
                     }
                 };
                 items.push(item);
