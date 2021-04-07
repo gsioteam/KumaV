@@ -66,15 +66,13 @@ class RequestItem {
   void _start() async {
     Uri uri = Uri.parse(url);
     dio = Dio(BaseOptions(
-      baseUrl: "${uri.scheme}://${uri.host}",
       headers: headers,
       responseType: ResponseType.stream
     ))..httpClientAdapter = Http2Adapter(ConnectionManager(
       idleTimeout: 10000,
     ));
-    _response = await dio.request<ResponseBody>(
-      uri.path,
-      queryParameters: uri.queryParameters,
+    _response = await dio.requestUri<ResponseBody>(
+      uri
     );
     _receiveResponse();
     await for (var chunk in _response.data.stream) {

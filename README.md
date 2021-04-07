@@ -1,16 +1,18 @@
 # kumav
 
-Awesome online video player.
+Awesome online video player. KumaV is publish on [Google Play](https://play.google.com/store/apps/details?id=com.ero.kumav)
 
-## Getting Started
+## Description
 
-This project is a starting point for a Flutter application.
+Powerful easy online video player, better way to watch online videos.
 
-A few resources to get you started if this is your first Flutter project:
+* Plug-in extensions: use git to manage plugin extensions, and provide online video content through plugins.
+* Floating player
+* Download videos
+* Download when playing
+* Video caching
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![main](screenshots/s1.jpeg)
+![player](screenshots/s2.jpeg)
+![floating](screenshots/s3.jpeg)
+![downloading](screenshots/s4.jpeg)

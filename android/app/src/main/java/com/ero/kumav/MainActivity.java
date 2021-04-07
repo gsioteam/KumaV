@@ -21,7 +21,7 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 
 public class MainActivity extends FlutterActivity {
-    final boolean is_debug = true;
+    final boolean is_debug = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

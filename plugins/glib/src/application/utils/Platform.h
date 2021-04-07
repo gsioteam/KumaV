@@ -38,6 +38,8 @@ namespace gs {
         static long startTimer(const gc::Callback &callback, float time, bool repeat = false);
         static void cancelTimer(long timer);
 
+        static std::string getLanguage();
+
         ON_LOADED_BEGIN(cls, gc::Object)
             ADD_METHOD_D(cls, Platform, startTimer, false);
             ADD_METHOD(cls, Platform, cancelTimer);

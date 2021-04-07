@@ -92,10 +92,12 @@ class Request extends Base {
         method: method,
         responseType: ResponseType.stream
       )
-    )..httpClientAdapter = Http2Adapter(ConnectionManager(
+    )
+      ..httpClientAdapter = Http2Adapter(ConnectionManager(
       idleTimeout: 10000,
       onClientCreate: (_, config) => config.onBadCertificate = (_) => true,
-    ));;
+    ))
+    ;
 
     control();
   }
@@ -189,6 +191,7 @@ class Request extends Base {
           }
         }
       } else {
+        print("start request $uri");
         Response<ResponseBody> res = await dio.requestUri<ResponseBody>(
           uri,
           data: body ?? Uint8List(0),

@@ -11,6 +11,7 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Build;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -135,6 +136,15 @@ class OverlayPlayerView extends RelativeLayout implements Player.EventListener {
     boolean isAppear = false;
     ImageButton fullscreenButton;
     ImageButton closeButton;
+    float unitSize = 0;
+
+    public int size(double size) {
+        if (unitSize == 0) {
+            DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
+            unitSize = 10 * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT);
+        }
+        return (int)(unitSize * size);
+    }
 
     public OverlayPlayerView(Context context) {
         super(context);
@@ -163,8 +173,8 @@ class OverlayPlayerView extends RelativeLayout implements Player.EventListener {
         fullscreenButton.setImageResource(R.drawable.fullscreen);
         fullscreenButton.setBackgroundColor(Color.TRANSPARENT);
         params = new RelativeLayout.LayoutParams(
-                100,
-                100
+                size(4),
+                size(4)
         );
         params.setMargins(margin, margin, margin, margin);
         fullscreenButton.setColorFilter(Color.WHITE);
@@ -187,8 +197,8 @@ class OverlayPlayerView extends RelativeLayout implements Player.EventListener {
         closeButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         closeButton.setBackgroundColor(Color.TRANSPARENT);
         params = new RelativeLayout.LayoutParams(
-                100,
-                100
+                size(4),
+                size(4)
         );
         params.setMargins(margin, margin, margin, margin);
         params.addRule(ALIGN_PARENT_RIGHT, TRUE);
@@ -220,8 +230,8 @@ class OverlayPlayerView extends RelativeLayout implements Player.EventListener {
             }
         });
         params = new RelativeLayout.LayoutParams(
-                160,
-                160
+                size(8),
+                size(8)
         );
         params.addRule(CENTER_IN_PARENT, TRUE);
         pauseButton.setLayoutParams(params);
@@ -265,8 +275,8 @@ class OverlayPlayerView extends RelativeLayout implements Player.EventListener {
         layoutParams.height = height;
         videoSize.x = width;
         videoSize.y = height;
-        layoutParams.x = (size.x - width) / 2 - 30;
-        layoutParams.y = (size.y - height) / 2 - 260;
+        layoutParams.x = (size.x - width) / 2 - size(6);
+        layoutParams.y = (size.y - height) / 2 - size(26);
         windowManager.addView(this, layoutParams);
 
         exoPlayer.setVideoSurfaceView(surfaceView);

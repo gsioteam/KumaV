@@ -1,5 +1,8 @@
 part of 'http2_adapter.dart';
 
+class FallbackException implements Exception {
+}
+
 /// Default implementation of ConnectionManager
 class _ConnectionManager implements ConnectionManager {
   /// Callback when socket created.
@@ -27,7 +30,7 @@ class _ConnectionManager implements ConnectionManager {
 
   @override
   Future<ClientTransportConnection> getConnection(
-      RequestOptions options) async {
+      RequestOptions options, [VoidCallback? willFallback]) async {
     if (_closed) {
       throw Exception(
           "Can't establish connection after [ConnectionManager] closed!");
@@ -38,7 +41,7 @@ class _ConnectionManager implements ConnectionManager {
     if (transportState == null) {
       var _initFuture = _connectFutures[domain];
       if (_initFuture == null) {
-        _connectFutures[domain] = _initFuture = _connect(options);
+        _connectFutures[domain] = _initFuture = _connect(options, willFallback);
       }
       transportState = await _initFuture;
       if (_forceClosed) {
@@ -58,7 +61,7 @@ class _ConnectionManager implements ConnectionManager {
   }
 
   Future<_ClientTransportConnectionState> _connect(
-      RequestOptions options) async {
+      RequestOptions options, [VoidCallback? willFallback]) async {
     var uri = options.uri;
     var domain = '${uri.host}:${uri.port}';
     var clientConfig = ClientSetting();
@@ -89,6 +92,13 @@ class _ConnectionManager implements ConnectionManager {
         }
       }
       rethrow;
+    }
+    if (socket.selectedProtocol != 'h2') {
+      // This isn't HTTP/2, fall back to HTTP/1.x
+      // Close the socket, because there's no way to convert an existing
+      // socket into an HttpClientRequest.
+      await socket.close();
+      throw FallbackException();
     }
     // Config a ClientTransportConnection and save it
     var transport = ClientTransportConnection.viaSocket(socket);

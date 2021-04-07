@@ -39,6 +39,7 @@ import 'package:xml_layout/xml_layout.dart';
 import 'dart:math' as math;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:glib/utils/browser.dart';
+import 'package:glib/utils/platform.dart' as glib;
 
 void main() {
   runApp(MainApp());
@@ -91,6 +92,19 @@ class MainAppState extends State<MainApp> {
         return true;
       },
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    glib.Platform.onGetLanguage = () {
+      if (locale.scriptCode != null) {
+        return "${locale.languageCode}-${locale.scriptCode}";
+      } else {
+        return locale.languageCode;
+      }
+    };
   }
 }
 
@@ -687,7 +701,9 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          appBar: NavigationBar(body.appBarData),
+          appBar: NavigationBar(
+              body.appBarData,
+          ),
           body: NotificationListener<LibraryNotification>(
             child: body,
             onNotification: (noti) {

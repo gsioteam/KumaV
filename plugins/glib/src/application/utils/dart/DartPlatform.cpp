@@ -77,3 +77,10 @@ void Platform::sendSignal() {
         platform->sendSignal();
     }
 }
+
+std::string Platform::getLanguage() {
+    Ref<DartPlatform> platform = DartPlatform::instance();
+    Variant res;
+    platform->apply("getLanguage", &res);
+    return res;
+}

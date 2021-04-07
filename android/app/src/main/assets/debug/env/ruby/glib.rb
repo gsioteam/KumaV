@@ -83,6 +83,15 @@ module GS
     end
   end
 
+  class FileData < GS::Object 
+    native 'gc::FileData'
+
+    def to_s *args
+      coding = args[0]
+      if coding then Encoder.decode(self, coding) else text end
+    end
+  end
+
   class Encoder < GS::Object
     native 'gs::Encoder'
   end

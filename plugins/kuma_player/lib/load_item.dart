@@ -74,8 +74,8 @@ class LoadItem {
       _onComplete([buf]);
     } else {
       item.onComplete = _onComplete;
+      print("URL: ${item.url}");
       var response = await item.getResponse();
-      print("URL: ${response.requestOptions.uri}");
       print("headers: ${response.headers}");
       print("statusCode: ${response.statusCode}");
       if (response.statusCode >= 200 && response.statusCode < 300) {

@@ -16,6 +16,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 
 import java.lang.reflect.Field;
@@ -128,17 +129,19 @@ public class KumaPlayerPlugin implements FlutterPlugin, MethodCallHandler, Activ
             field.setAccessible(true);
             Surface surface = (Surface) field.get(videoPlayer);
 
-            OverlayPlayerView overlayPlayerView = new OverlayPlayerView(activity);
-            overlayPlayerView.exoPlayer = exoPlayer;
-            overlayPlayerView.flutterSurface = surface;
-            overlayPlayerView.setOnEventListener(new OverlayPlayerView.OnEventListener() {
-              @Override
-              public void onDismiss() {
-                overlayPlayers.remove(textureId.longValue());
-              }
-            });
-            overlayPlayers.put(textureId.longValue(), overlayPlayerView);
-            overlayPlayerView.showOverlay();
+            if (exoPlayer.getPlaybackState() == Player.STATE_READY) {
+              OverlayPlayerView overlayPlayerView = new OverlayPlayerView(activity);
+              overlayPlayerView.exoPlayer = exoPlayer;
+              overlayPlayerView.flutterSurface = surface;
+              overlayPlayerView.setOnEventListener(new OverlayPlayerView.OnEventListener() {
+                @Override
+                public void onDismiss() {
+                  overlayPlayers.remove(textureId.longValue());
+                }
+              });
+              overlayPlayers.put(textureId.longValue(), overlayPlayerView);
+              overlayPlayerView.showOverlay();
+            }
           }
         } catch (Exception e) {
           e.printStackTrace();

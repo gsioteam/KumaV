@@ -43,12 +43,14 @@ class Platform extends Base {
   }
 
   Map<int, TimerInfo> timers = Map();
+  static String Function() onGetLanguage;
 
   initialize() {
     super.initialize();
     on("startTimer", startTimer);
     on("cancelTimer", cancelTimer);
     on("control", control);
+    on("getLanguage", getLanguage);
     _platformCache.add(this);
   }
 
@@ -89,6 +91,10 @@ class Platform extends Base {
   void destroy() {
     _removeAll();
     _platformCache.remove(this);
+  }
+
+  String getLanguage() {
+    return onGetLanguage?.call();
   }
 
   static clearPlatform() {
