@@ -130,6 +130,7 @@ abstract class ProxyItem {
     if (idx >= 0) {
       ext = filename.substring(idx + 1).toLowerCase();
     }
+    if (headers == null) headers = {};
     if (ext == "m3u8") {
       return HlsProxyItem._(server, url, headers: headers);
     } else {
