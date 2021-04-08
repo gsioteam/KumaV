@@ -101,7 +101,10 @@ class DownloadQueueItem {
   }
 
   DownloadQueueItem._(this.data, this.item, this._manager) {
-    downloader = VideoDownloader(info.videoUrl);
+    downloader = VideoDownloader(
+      info.videoUrl,
+      headers: info.headers
+    );
     downloader.onState = () {
       if (state == DownloadState.Stop || state == DownloadState.Complete) {
         _manager.downloading.remove(this);
@@ -191,7 +194,10 @@ class DownloadQueueItem {
                 "headers": info.headers
               }).control();
               downloader.dispose();
-              downloader = VideoDownloader(info.videoUrl);
+              downloader = VideoDownloader(
+                info.videoUrl,
+                headers: info.headers
+              );
             }
 
             completer.complete();

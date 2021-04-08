@@ -47,13 +47,9 @@ class VideoDownloader {
 
   bool _loading = false;
 
-  VideoDownloader(String url) {
-    _setup(url);
-  }
-
-  void _setup(String url) {
+  VideoDownloader(String url, {Map<String, String> headers}) {
     ProxyServer server = ProxyServer.instance;
-    _proxyItem = server.get(url);
+    _proxyItem = server.get(url, headers: headers);
     _proxyItem.retain();
 
     try {
