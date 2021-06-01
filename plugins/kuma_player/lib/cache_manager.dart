@@ -66,7 +66,24 @@ class CacheManager {
     }
   }
 
-  int getSize(String key) {
+  Future<int> getSize(String key) async {
+    if (_cache.containsKey(key)) {
+      _keys.remove(key);
+      _keys.insert(0, key);
+      return _cache[key].length;
+    }
+    String path = dir.path + (key[0] == "/" ? key : "/"+key);
+    File file = File(path);
+    if (file.existsSync()) {
+      var stat = await file.stat();
+      return stat.size;
+    } else {
+      return 0;
+    }
+  }
+
+
+  int getSizeSync(String key) {
     if (_cache.containsKey(key)) {
       _keys.remove(key);
       _keys.insert(0, key);
@@ -105,15 +122,25 @@ class CacheManager {
     }
   }
 
-  bool contains(String key) {
+  Future<bool> contains(String key) async {
+    if (_cache.containsKey(key)) {
+      return SynchronousFuture<bool>(true);
+    }
+    String path = dir.path + (key[0] == "/" ? key : "/"+key);
+    var stat = await File(path).stat();
+    return stat.type != FileSystemEntityType.notFound && stat.size > 0;
+  }
+
+  bool containsSync(String key) {
     if (_cache.containsKey(key)) {
       return true;
     }
     String path = dir.path + (key[0] == "/" ? key : "/"+key);
-    return File(path).existsSync();
+    var stat = File(path).statSync();
+    return stat.type != FileSystemEntityType.notFound && stat.size > 0;
   }
 
-  void insert(String key, List<int> buf) {
+  void insert(String key, List<int> buf) async {
     _addCache(key, buf);
     String path = dir.path + (key[0] == "/" ? key : "/"+key);
     File file = File(path);
@@ -121,7 +148,10 @@ class CacheManager {
     if (!parent.existsSync()) {
       parent.createSync(recursive: true);
     }
-    file.writeAsBytes(buf);
+    await file.writeAsBytes(buf, flush: true);
+    if (!file.existsSync()) {
+      file.writeAsBytesSync(buf, flush: true);
+    }
   }
 
   void remove(String key) {

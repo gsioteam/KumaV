@@ -29,6 +29,7 @@ class RequestItem {
   Map<String, String> headers;
   String method;
   CompleteCallback onComplete;
+  VoidCallback onFailed;
   bool _isComplete = false;
   bool get isComplete => _isComplete;
 
@@ -57,6 +58,12 @@ class RequestItem {
     onComplete?.call(chunks);
   }
 
+  void _failed() {
+    _listeners.clear();
+    queue._finished(this);
+    onFailed?.call();
+  }
+
   void _receiveResponse() {
     _responseCallbacks.forEach((element) {
       element.call(_response);
@@ -68,17 +75,19 @@ class RequestItem {
     dio = Dio(BaseOptions(
       headers: headers,
       responseType: ResponseType.stream
-    ))..httpClientAdapter = Http2Adapter(ConnectionManager(
-      idleTimeout: 10000,
     ));
     _response = await dio.requestUri<ResponseBody>(
       uri
     );
-    _receiveResponse();
-    await for (var chunk in _response.data.stream) {
-      _receive(chunk);
+    if (_response.statusCode >= 200 && _response.statusCode < 300) {
+      _receiveResponse();
+      await for (var chunk in _response.data.stream) {
+        _receive(chunk);
+      }
+      _complete();
+    } else {
+      _failed();
     }
-    _complete();
   }
 
   void addListener(LoadListener listener) {

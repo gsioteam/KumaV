@@ -88,9 +88,9 @@ packages:
   dio_http2_adapter:
     dependency: transitive
     description:
-      name: dio_http2_adapter
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "../../http2_adapter"
+      relative: true
+    source: path
     version: "2.0.0"
   fake_async:
     dependency: transitive
@@ -143,7 +143,7 @@ packages:
       name: http
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.13.1"
+    version: "0.13.3"
   http2:
     dependency: transitive
     description:
@@ -281,7 +281,7 @@ packages:
       name: source_span
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.1"
+    version: "1.8.0"
   sqflite:
     dependency: transitive
     description:

@@ -105,6 +105,7 @@ class DownloadQueueItem {
       info.videoUrl,
       headers: info.headers
     );
+    downloader.multiThreadLimit = _manager.multiThreadLimit;
     downloader.onState = () {
       if (state == DownloadState.Stop || state == DownloadState.Complete) {
         _manager.downloading.remove(this);
@@ -237,6 +238,7 @@ class DownloadManager {
 
   DownloadManager._() {
     _queueLimit = Settings.downloadLimit;
+    multiThreadLimit = Settings.multiThreadLimit;
     Array arr = CollectionData.all(collection_download);
     for (CollectionData data in arr) {
       DownloadQueueItem queueItem = DownloadQueueItem(data, this);
@@ -268,6 +270,8 @@ class DownloadManager {
       }
     }
   }
+
+  int multiThreadLimit = 3;
 
   void checkQueue() {
     while (downloading.length < queueLimit && waiting.length > 0) {

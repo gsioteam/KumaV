@@ -63,4 +63,5 @@ The copyright of the downloadable video resources provided by this software belo
   "clear_cache": "Would you like to clear cache?",
   "clear": "Clear Cache",
   "source": "Source",
+  "multi_thread_limit": "Multi-Thread Limit",
 };

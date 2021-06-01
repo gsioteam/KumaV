@@ -131,11 +131,14 @@ abstract class ProxyItem {
       ext = filename.substring(idx + 1).toLowerCase();
     }
     if (headers == null) headers = {};
+    ProxyItem ret;
     if (ext == "m3u8") {
-      return HlsProxyItem._(server, url, headers: headers);
+      ret = HlsProxyItem._(server, url, headers: headers);
     } else {
-      return SingleProxyItem._(server, url, headers: headers);
+      ret = SingleProxyItem._(server, url, headers: headers);
     }
+    ret._loadBuffered();
+    return ret;
   }
 
   void gotError() {
@@ -160,9 +163,9 @@ abstract class ProxyItem {
   }
 
   void itemLoaded(LoadItem item, List<List<int>> chunks) {
-    _buffered = null;
-    for (var onBuffered in _onBuffered)
-      onBuffered();
+    if (!_updateBuffered) {
+      _loadBuffered();
+    }
   }
 
   void addLoadItem(LoadItem item) {
@@ -173,42 +176,48 @@ abstract class ProxyItem {
 
   LoadItem getLoadItem(String cacheKey) => _loadItemIndex[cacheKey];
 
-  List<BufferedRange> _buffered;
-  List<BufferedRange> get buffered {
-    if (_buffered == null) {
-      _buffered = [];
-      List<_RangeData> ranges = [];
-      bool outRange = true;
-      int offset = 0;
-      _RangeData range;
-      for (LoadItem item in _loadItems) {
-        if (outRange) {
-          if (item.loaded) {
-            range = _RangeData(offset, offset + item.weight);
-            outRange = false;
-          } else {
-          }
-        } else {
-          if (item.loaded) {
-            range.end += item.weight;
-          } else {
-            ranges.add(range);
-            range = null;
-            outRange = true;
-          }
-        }
-        offset += item.weight;
-      }
-      if (range != null) ranges.add(range);
+  List<BufferedRange> _buffered = [];
+  List<BufferedRange> get buffered => _buffered;
 
-      for (_RangeData range in ranges) {
-        _buffered.add(BufferedRange()
-          ..start = (offset == 0 ? 0 : range.start / offset)
-          ..end = (offset == 0 ? 0 : range.end / offset)
-        );
+  bool _updateBuffered = false;
+  Future<void> _loadBuffered() async {
+    _updateBuffered = true;
+    List<BufferedRange> buffered = [];
+    List<_RangeData> ranges = [];
+    bool outRange = true;
+    int offset = 0;
+    _RangeData range;
+    for (LoadItem item in _loadItems) {
+      if (outRange) {
+        if (await item.loaded) {
+          range = _RangeData(offset, offset + item.weight);
+          outRange = false;
+        } else {
+        }
+      } else {
+        if (await item.loaded) {
+          range.end += item.weight;
+        } else {
+          ranges.add(range);
+          range = null;
+          outRange = true;
+        }
       }
+      offset += item.weight;
     }
-    return _buffered;
+    if (range != null) ranges.add(range);
+
+    for (_RangeData range in ranges) {
+      buffered.add(BufferedRange()
+        ..start = (offset == 0 ? 0 : range.start / offset)
+        ..end = (offset == 0 ? 0 : range.end / offset)
+      );
+    }
+    _buffered = buffered;
+    _updateBuffered = false;
+
+    for (var onBuffered in _onBuffered)
+      onBuffered();
   }
 
   void addOnSpeed(void Function(int) cb) => _onSpeeds.add(cb);
@@ -217,7 +226,7 @@ abstract class ProxyItem {
   void addOnBuffered(VoidCallback cb) => _onBuffered.add(cb);
   void removeOnBuffered(VoidCallback cb) => _onBuffered.remove(cb);
 
-  void checkBuffered();
+  Future<void> checkBuffered();
 
   void processBuffer(LoadItem item, List<int> buffer);
 }
@@ -439,10 +448,10 @@ class HlsProxyItem extends ProxyItem {
     }
   }
 
-  void checkBuffered() {
+  Future<void> checkBuffered() async {
     for (int i = 0; i < _loadItems.length; ++i) {
       var item = _loadItems[i];
-      if (item.loaded) {
+      if (await item.loaded) {
         String ext = p.extension(item.cacheKey)?.toLowerCase();
         var buf = item.readSync();
         if (ext == '.m3u8' || _isM3u8(buf)) {
@@ -589,10 +598,10 @@ class SingleProxyItem extends ProxyItem {
   }
 
 
-  void checkBuffered() {
+  Future<void> checkBuffered() async {
     for (int i = 0; i < _loadItems.length; ++i) {
       var item = _loadItems[i];
-      if (item.loaded) {
+      if (await item.loaded) {
         if (item.cacheKey == "$cacheKey/index") {
           if (contentLength == null) {
             String indexKey = "$cacheKey/index";

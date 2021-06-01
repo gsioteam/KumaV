@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'proxy_server.dart';
@@ -10,15 +11,16 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart' show rootBundle;
 
 class LoadItem {
-  bool _loaded;
+  Future<bool> _loaded;
   int _weight;
   RequestItem Function() _requestItemBuilder;
   ProxyItem _proxyItem;
   void Function(int) onLoadData;
+  ProxyItem get proxyItem => _proxyItem;
 
   String cacheKey;
 
-  bool get loaded => _loaded;
+  Future<bool> get loaded => _loaded;
   int get weight => _weight;
   dynamic data;
 
@@ -43,11 +45,11 @@ class LoadItem {
     return _testData[idx];
   }
 
-  int get size =>  _proxyItem.server.cacheManager.getSize(cacheKey);
+  Future<int> get size =>  _proxyItem.server.cacheManager.getSize(cacheKey);
   List<int> readSync() => _proxyItem.server.cacheManager.loadSync(cacheKey);
 
   Stream<List<int>> read([int start = 0, int end = -1]) async* {
-    if (_proxyItem.server.cacheManager.contains(this.cacheKey)) {
+    if (await _proxyItem.server.cacheManager.contains(this.cacheKey)) {
       List<int> buffer = await _proxyItem.server.cacheManager.load(this.cacheKey);
       if (buffer != null) {
         if (start != 0 || end > 0) {
@@ -76,6 +78,7 @@ class LoadItem {
       _onComplete([buf]);
     } else {
       item.onComplete = _onComplete;
+      item.onFailed = _onFailed;
       print("URL: ${item.url}");
       var response = await item.getResponse();
       print("headers: ${response.headers}");
@@ -128,15 +131,19 @@ class LoadItem {
   }
 
   void clear() {
-    _loaded = false;
-    if (_proxyItem.server.cacheManager.contains(this.cacheKey)) {
+    _loaded = SynchronousFuture<bool>(false);
+    if (_proxyItem.server.cacheManager.containsSync(this.cacheKey)) {
       _proxyItem.server.cacheManager.remove(this.cacheKey);
     }
   }
 
   void _onComplete(List<List<int>> chunks) {
-    _loaded = true;
+    _loaded = SynchronousFuture<bool>(true);
     _proxyItem.server.cacheManager.insert(cacheKey, chunks.expand((e) => e).toList());
     _proxyItem.itemLoaded(this, chunks);
+  }
+
+  void _onFailed() {
+    _loaded = SynchronousFuture<bool>(false);
   }
 }

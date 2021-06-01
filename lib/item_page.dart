@@ -839,7 +839,8 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
       },
       child: BetterRefreshIndicator(
         child: CustomScrollView(
-          controller: scrollController,
+          // controller: scrollController,
+          // physics: BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Container(
@@ -1194,13 +1195,17 @@ class _ItemPageState extends State<ItemPage> with SingleTickerProviderStateMixin
   }
 
   void _onDataChange(int type, Array data, int idx) {
-    if (data != null) {
-      if (videoData == null && data.length > 0) {
-        _updateData(data);
-
-        _readVideoAndPlay(this.data[currentIndex]);
+    try {
+      if (data != null) {
+        if (data.length > 0) {
+          _updateData(data);
+          if (videoData == null)
+            _readVideoAndPlay(this.data[currentIndex]);
+        }
+        setState(() {});
       }
-      setState(() {});
+    } catch (e) {
+      print("Error : $e");
     }
   }
 

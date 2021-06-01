@@ -1,6 +1,5 @@
 
 const {Collection} = require('./collection');
-const crossCloudfare = require('./cross_cloudfare');
 
 class SearchCollection extends Collection {
     
@@ -10,43 +9,39 @@ class SearchCollection extends Collection {
     }
 
     async fetch(url) {
-        console.log(url);
+        let pageUrl = new PageURL(url);
         let doc = await super.fetch(url);
-        let nodes = doc.querySelectorAll('.list-group > .item');
+        let nodes = doc.querySelectorAll('ul.list-unstyled > li.card');
 
-        console.log(nodes.length);
-        let items = [];
+        let results = [];
         for (let node of nodes) {
-            let img = node.querySelector('.post-thumb img');
             let item = glib.DataItem.new();
-            item.picture = img.attr('data-src');
-            item.title = img.attr('alt');
-            item.subtitle = node.querySelector('.post-des .post-summary').text;
-            item.link = node.querySelector('.post-thumb a').attr('href');
 
-            items.push(item);
+            item.link = pageUrl.href(node.querySelector('a.stretched-link-').attr('href'));
+            item.title = node.querySelector('.anime-title').text;
+            item.picture = pageUrl.href(node.querySelector('img.card-img-').attr('data-src'));
+            item.subtitle = node.querySelector('ul.list-unstyled > li:last-child > .text-light').text;
+            item.summary = node.querySelector('.catalog_summary > span:last-child').text.trim();
+            results.push(item);
         }
-        return items;
+        return results;
     }
 
     makeURL(page) {
-        let url = this.url.replace('{0}', glib.Encoder.urlEncode(this.key));
-        return url.replace('{1}', `page/${page + 1}/`);
+        return this.url.replace('{0}', glib.Encoder.urlEncode(this.key)).replace('{1}', page + 1);
     }
 
     reload(data, cb) {
         this.key = data.get("key") || this.key;
-        let page = 0;
+        let page = data.get("page") || 0;
         if (!this.key) return false;
         this.fetch(this.makeURL(page)).then((results)=>{
             this.page = page;
             this.setData(results);
             cb.apply(null);
         }).catch(function(err) {
-            if (err instanceof Error) {
-                console.log(err.stack);
+            if (err instanceof Error) 
                 err = glib.Error.new(305, err.message);
-            }
             cb.apply(err);
         });
         return true;
@@ -59,10 +54,8 @@ class SearchCollection extends Collection {
             this.appendData(results);
             cb.apply(null);
         }).catch(function(err) {
-            if (err instanceof Error) {
-                console.log(err.stack);
+            if (err instanceof Error) 
                 err = glib.Error.new(305, err.message);
-            }
             cb.apply(err);
         });
         return true;

@@ -12,9 +12,15 @@ class URL {
         str = str.substr(this.host.length);
         let path = str;
         let sidx = path.indexOf('?');
-        this.path = path.substr(0, sidx);
+        let search;
+        if (sidx >= 0) {
+            this.pathname = this.path = path.substr(0, sidx);
+            search = path.substr(sidx);
+        } else {
+            this.pathname = this.path = path;
+            search = '';
+        }
         if (!this.path) this.path = "/";
-        let search = path.substr(sidx);
         let hidx = search.indexOf('#');
         if (hidx >= 0) {
             this.search = search.substr(0, hidx);

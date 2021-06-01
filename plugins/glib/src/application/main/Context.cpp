@@ -273,11 +273,12 @@ void Context::enterView() {
                 this->on_data_changed(Collection::Reload, data, 0);
             }
         }
-        if (type == Chapter) {
-            if (flag == 0 || forceUpdate) {
-                reload();
-            }
-        } else if (type != Search) {
+//        if (type == Chapter) {
+//            if (flag == 0 || forceUpdate) {
+//                reload();
+//            }
+//        } else
+        if (type != Search) {
             if (update || !data->size() || forceUpdate) {
                 reload();
             }

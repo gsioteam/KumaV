@@ -14,28 +14,123 @@ enum DownloadState {
   Complete
 }
 
+class DownloadTaskItem {
+  LoadItem item;
+  bool canceled = false;
+
+  Future<Error> download() async {
+    try {
+      if (!await item.loaded) {
+        var stream = item.read();
+        List<int> list = [];
+        await for (var buf in stream) {
+          if (canceled) break;
+          list.addAll(buf);
+        }
+        item.proxyItem.processBuffer(item, list);
+      }
+      return null;
+    } catch (e) {
+      return e is Error ? e : ExceptionError(e.toString());
+    }
+  }
+
+  void stop() {
+    canceled = true;
+  }
+
+  DownloadTaskItem clone() {
+    return DownloadTaskItem()
+      ..item = item;
+  }
+}
+
+class DownloadTaskQueue {
+  Set<DownloadTaskItem> downloading = Set();
+  int maxDownloading = 3;
+  int maxFailed = 5;
+  Queue<DownloadTaskItem> queue = Queue();
+  void Function(bool success) onComplete;
+
+  int _failedCount = 0;
+
+  bool _stop = true;
+
+  Error lastError;
+
+  void start() async {
+    if (!_stop) return;
+    _stop = false;
+
+    for (int i = downloading.length; i < maxDownloading; ++i) {
+      if (downloading.length >= maxDownloading || queue.length == 0) break;
+      _startItem();
+      await Future.delayed(Duration(seconds: 1));
+    }
+  }
+
+  void _startItem() async {
+    if (_stop) return;
+    if (queue.length == 0 || _failedCount >= maxFailed || downloading.length >= maxDownloading) return;
+    DownloadTaskItem item = queue.removeFirst();
+    downloading.add(item);
+    Error err = await item.download();
+    downloading.remove(item);
+    if (err != null) {
+      _failedCount++;
+      lastError = err;
+      queue.addLast(item.clone());
+      if (downloading.length == 0 && _failedCount >= maxFailed) {
+        // failed
+        _stop = true;
+        onComplete?.call(true);
+        return;
+      }
+    } else {
+      _failedCount = 0;
+    }
+    if (queue.length == 0 && downloading.length == 0) {
+      // complete
+      _stop = true;
+      onComplete?.call(false);
+    } else {
+      _startItem();
+    }
+  }
+
+  void stop() {
+    if (_stop) return;
+    _stop = true;
+    for (var item in downloading) {
+      item.stop();
+      queue.addFirst(item.clone());
+    }
+  }
+
+  void add(LoadItem item) {
+    queue.addLast(DownloadTaskItem()..item = item);
+  }
+}
 
 class TimeoutError extends Error {
   @override
   String toString() {
-    return "No data received in 15 seconds";
+    return "No data received in ${VideoDownloader.MAX_SIZE} seconds";
   }
 }
 
 class ExceptionError extends Error {
-  Exception exception;
+  String error;
 
-  ExceptionError(this.exception);
+  ExceptionError(this.error);
 
   @override
-  String toString() => exception.toString();
+  String toString() => error;
 }
 
 class VideoDownloader {
   ProxyItem _proxyItem;
   double _progress = 0;
-  bool _progressDirty = true;
-  bool _dependDirty = false;
   DownloadState _state = DownloadState.Stop;
 
   ProxyItem get proxyItem => _proxyItem;
@@ -44,30 +139,78 @@ class VideoDownloader {
   VoidCallback onSpeed;
   VoidCallback onState;
   void Function(Error) onError;
+  DownloadTaskQueue _queue;
 
-  bool _loading = false;
+  bool _prepared = false;
+  Completer<void> _completer;
+
+  bool get prepared => _prepared;
+
+  int _multiThreadLimit = 3;
+  int get multiThreadLimit => _multiThreadLimit;
+  set multiThreadLimit(int count) {
+    if (_multiThreadLimit != count) {
+      _multiThreadLimit = count;
+      _queue?.maxDownloading = count;
+    }
+  }
 
   VideoDownloader(String url, {Map<String, String> headers}) {
     ProxyServer server = ProxyServer.instance;
     _proxyItem = server.get(url, headers: headers);
     _proxyItem.retain();
 
+    _checkState();
+
+    _proxyItem.addOnBuffered(_onBuffered);
+    _proxyItem.addOnSpeed(_onSpeed);
+  }
+
+  Future<void> _checkState() async {
+    _completer = Completer();
     try {
-      _proxyItem.checkBuffered();
+      bool setup = _queue == null;
+      int size = 0;
+      int totalWeight = 0, loadedWeight = 0;
+      if (setup) {
+        _queue = DownloadTaskQueue();
+        _queue.maxDownloading = multiThreadLimit;
+        _queue.onComplete = (failed) {
+          if (failed) {
+            _state = DownloadState.Stop;
+            onError?.call(_queue.lastError);
+          } else {
+            _state = DownloadState.Complete;
+          }
+          onState?.call();
+        };
+      }
+      await _proxyItem.checkBuffered();
       int count = 0;
       for (var item in _proxyItem.loadItems) {
-        if (item.loaded) count++;
+        if (await item.loaded) {
+          count++;
+          size += await item.size;
+          loadedWeight += item.weight;
+        } else if (setup) {
+          _queue.add(item);
+        }
+        totalWeight += item.weight;
       }
-      if (count == _proxyItem.loadItems.length) {
+      if (count == _proxyItem.loadItems.length && _state != DownloadState.Complete) {
         _state = DownloadState.Complete;
         onState?.call();
+      }
+      _size = size;
+      _progress = loadedWeight / totalWeight;
+      if (_state == DownloadState.Downloading || !_prepared) {
+        _prepared = true;
+        onProgress?.call();
       }
     } catch (e) {
 
     }
-
-    _proxyItem.addOnBuffered(_onBuffered);
-    _proxyItem.addOnSpeed(_onSpeed);
+    _completer.complete();
   }
 
   void dispose() {
@@ -77,100 +220,26 @@ class VideoDownloader {
   }
 
   void _onBuffered() {
-    _progressDirty = true;
-    _sizeDirty = true;
-    if (_state == DownloadState.Downloading) {
-      onProgress?.call();
+    if (_completer.isCompleted) {
+      _checkState();
     }
   }
 
-  double get progress {
-    if (_progressDirty && _proxyItem != null) {
-      var buffered = _proxyItem.buffered;
-      _progress = 0;
-      for (var part in buffered) {
-        _progress += (part.end - part.start);
-      }
-      _progressDirty = false;
-    }
-    return _progress;
-  }
+  double get progress => _progress;
 
   int _size = 0;
-  bool _sizeDirty = true;
   int get size {
-    if (_sizeDirty) {
-      _size = 0;
-      for (var item in _proxyItem.loadItems) {
-        if (item.loaded) {
-          _size += item.size;
-        }
-      }
-      _sizeDirty = false;
-    }
     return _size;
   }
 
   DownloadState get state => _state;
-
-  void checkState() {
-    if (_state == DownloadState.Downloading) {
-      if (_dependDirty) {
-        _dependDirty = false;
-        _onBuffered();
-      }
-      _startDownload();
-    }
-  }
-
-  Future<void> _startDownload() async {
-    if (!_loading) {
-      _loading = true;
-
-      try {
-        int count = 0;
-        for (int i = 0; i < proxyItem.loadItems.length; ++i) {
-          LoadItem item = proxyItem.loadItems[i];
-          if (!item.loaded) {
-            var stream = item.read();
-            List<int> list = [];
-            await for (var buf in stream) {
-              if (_state != DownloadState.Downloading) {
-                break;
-              }
-              list.addAll(buf);
-            }
-            proxyItem.processBuffer(item, list);
-            count++;
-          } else {
-            count++;
-          }
-          if (_state != DownloadState.Downloading) {
-            break;
-          }
-        }
-        if (count == proxyItem.loadItems.length) {
-          _state = DownloadState.Complete;
-          onState?.call();
-          onSpeed?.call();
-        }
-      } catch (e) {
-        onError?.call(e is Error ? e : ExceptionError(e));
-        _state = DownloadState.Stop;
-        onState?.call();
-        onSpeed?.call();
-      }
-
-      _loading = false;
-    }
-  }
 
   void start() {
     if (_state == DownloadState.Stop) {
       _speeds.clear();
       _state = DownloadState.Downloading;
       onState?.call();
-      checkState();
+      _queue.start();
     }
   }
 
@@ -179,10 +248,11 @@ class VideoDownloader {
       _state = DownloadState.Stop;
       onState?.call();
       onSpeed?.call();
+      _queue.stop();
     }
   }
 
-  static const int MAX_SIZE = 15;
+  static const int MAX_SIZE = 30;
   Queue<int> _speeds = Queue();
   void _onSpeed(int speed) {
     if (_state == DownloadState.Downloading) {

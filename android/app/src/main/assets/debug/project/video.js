@@ -1,95 +1,100 @@
 const {Collection} = require('./collection');
-const crossCloudfare = require('./cross_cloudfare');
-const {setup} = require('./bundle');
 
-class QuickVideoCollection extends Collection {
+function on_play(play_cfg, play_id) {
+	if (play_cfg == 'url' || play_cfg == 'raw_flash' || play_cfg == 'raw' || play_cfg == 'm3u8' || play_cfg == 'mp4') {
+		return '/myapp/_get_raw?id={0}'.replace('{0}',play_id);
+	}
 
-    async processAjax(text) {
-        return new Promise((resolve, reject) => {
-            let ctx = this.ctx = glib.ScriptContext.new('js');
-            let data = glib.FileData.new(`${__dirname}/bundle.js`);
-            ctx.eval(data.toString());
-            let cb = ctx.eval('_setup');
-            this.onAjax = glib.Callback.fromFunction((data) => {
-                try {
-                    let d = data.toObject();
-                    let req = glib.Request.new(d.type, d.url);
-                    let arr = [];
-                    for (let key in d.data) {
-                        arr.push(`${key}=${d.data[key]}`);
+	if (play_cfg == 'quan1098') {
+		return '/myapp/_get_qn_2?id={0}&quote=1'.replace('{0}',play_id);
+	}
+
+	if (play_cfg == 'qz1006' || play_cfg == 'qz1097' || play_cfg == 'qz1075') {
+		return '/myapp/_get_e_i?url={0}&quote=1'.replace('{0}',play_id);
+	}
+	if (play_cfg == 'weibo') {
+		return '/myapp/_get_w_2?url={0}&quote=1'.replace('{0}',play_id);
+	}
+	
+	if (play_cfg == 'mp4s') {
+		return '/myapp/_get_mp4s?id={0}'.replace('{0}',play_id);
+	}		
+}
+
+class VideoCollection extends Collection {
+
+	fetch(url) {
+        return new Promise((resolve, reject)=>{
+            let req = glib.Request.new('GET', url);
+            // req.setHeader('User-Agent', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Mobile Safari/537.36');
+            req.setHeader('Accept-Language', 'en-US,en;q=0.9');
+            this.callback = glib.Callback.fromFunction(function() {
+                if (req.getError()) {
+                    reject(glib.Error.new(302, "Request error " + req.getError()));
+                } else {
+                    let body = req.getResponseBody();
+                    if (body) {
+                        resolve(body.text());
+                    } else {
+                        reject(glib.Error.new(301, "Response null body"));
                     }
-                    req.setBody(glib.Data.fromString(arr.join('&')));
-                    req.setHeader('content-type', 'application/x-www-form-urlencoded');
-                    this.callback = glib.Callback.fromFunction(() => {
-                        console.log('complete!');
-                        let body = req.getResponseBody();
-                        d.success(body.text(), 'OK');
-                    });
-                    req.setOnComplete(this.callback);
-                    req.start();
-                    console.log('start ' + JSON.stringify(d));
-                } catch (e) {
-                    reject(e);
                 }
             });
-            this.onComplete = glib.Callback.fromFunction((options) => {
-                resolve(options.toObject());
-            });
-            cb.apply({
-                onAjax: this.onAjax,
-                onComplete: this.onComplete
-            });
-            ctx.eval(text);
+            req.setOnComplete(this.callback);
+            req.start();
         });
     }
 
-	async fetch(url) {
-        console.log('url: ' + url);
-        let doc = await super.fetch(url, {
-            headers: {
-                referer: 'https://javfull.net/'
-            }
-        });
-        let scripts = doc.querySelectorAll('script:not([src])');
-        let selText;
-        for (let script of scripts) {
-            let text = script.text;
-            if (text.match(/ﾟωﾟ/)) {
-                selText = text;
-            }
-        }
-        if (selText) {
-            let items = [];
-            let data = await this.processAjax(selText);
-            for (let source of data.sources) {
-                let item = glib.DataItem.new();
-                item.title = source.label;
-                item.link = url;
+    async request(url) {
+        let text = await this.fetch(url);
+        console.log("f result " + text);
+		let json = JSON.parse(text);
+		let items = [];
+		for (let data of json.result) {
+			let item = glib.DataItem.new();
+            let path = on_play(data.cfg, data.id);
+            let fullurl = "https://agefans.org" + path;
+			item.link = fullurl;
+			item.title = "线路 " + data.cfg_n;
+			// let url = await 
+            if (path) {
                 item.data = {
-                    url: source.src,
-                    headers: {
-                        referer: url,
-                        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
-                        accept: '*/*',
-                        'accept-encoding': 'deflate, gzip'
-                    }
+                    link: fullurl,
+                    handler: "handler",
                 };
                 items.push(item);
             }
-            return items;
-        }
-        return [];
+		}
+
+        return items;
     }
 
+	async handler(data, resolve, reject) {
+        data = data.toObject();
+        try {
+            console.log("Fetch " + data.link);
+            let text = await this.fetch(data.link);
+            try {
+                let json = JSON.parse(text);
+                text = decodeURIComponent(json.result);
+            } catch (e) {
+            }
+            if (text.startsWith("//")) {
+                text = "https:" + text;
+            }
+            resolve.apply(text);
+        } catch (e) {
+            reject.apply(e.message);
+        }
+	}
+
     reload(_, cb) {
-        this.fetch(this.url).then((results)=>{
+        this.request(this.url).then((results)=>{
             this.setData(results);
             cb.apply(null);
         }).catch(function(err) {
-            if (err instanceof Error) {
-                console.log("Err " + err.message + " stack " + err.stack);
+            if (err instanceof Error) 
                 err = glib.Error.new(305, err.message);
-            }
             cb.apply(err);
         });
         return true;
@@ -97,9 +102,5 @@ class QuickVideoCollection extends Collection {
 }
 
 module.exports = function(item) {
-    let link = item.link;
-    if (link.match(/quickvideo\.net/)) {
-        return QuickVideoCollection.new(item);
-    } 
-    return null;
+    return VideoCollection.new(item);
 };

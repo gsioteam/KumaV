@@ -47,6 +47,15 @@ class Settings {
     KeyValue.set(download_limit_key, count.toString());
   }
 
+  static int get multiThreadLimit {
+    String count = KeyValue.get(multi_thread_limit_key);
+    return count == null ? 3 : (int.tryParse(count) ?? 3);
+  }
+
+  static set multiThreadLimit(int count) {
+    KeyValue.set(multi_thread_limit_key, count.toString());
+  }
+
   static bool get floatingPlayer {
     String str = KeyValue.get(floating_player_key) ?? '';
     return str.isEmpty ? true : (str == "true");
@@ -78,41 +87,41 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
     return "${num.toStringAsFixed(2)} $unit";
   }
 
-  Widget accountWidget() {
-    var userInfo = GithubAccount().userInfo;
-    if (userInfo == null) {
-      return ListTile(
-        leading: CircleAvatar(
-          child: Icon(
-            Icons.account_circle_outlined,
-            size: 36,
-          ),
-        ),
-        title: Text(kt("no_login")),
-        onTap: () async {
-          if (await GithubAccount().login(context)) {
-            setState(() { });
-          }
-        },
-      );
-    } else {
-      return ListTile(
-        leading: CircleAvatar(
-          child: Image(
-            image: CachedNetworkImageProvider(
-              userInfo.avatar ?? ""
-            ),
-          ),
-        ),
-        title: Text(userInfo.login ?? ""),
-        onTap: () {
-          setState(() {
-            GithubAccount().logout();
-          });
-        },
-      );
-    }
-  }
+  // Widget accountWidget() {
+  //   var userInfo = GithubAccount().userInfo;
+  //   if (userInfo == null) {
+  //     return ListTile(
+  //       leading: CircleAvatar(
+  //         child: Icon(
+  //           Icons.account_circle_outlined,
+  //           size: 36,
+  //         ),
+  //       ),
+  //       title: Text(kt("no_login")),
+  //       onTap: () async {
+  //         if (await GithubAccount().login(context)) {
+  //           setState(() { });
+  //         }
+  //       },
+  //     );
+  //   } else {
+  //     return ListTile(
+  //       leading: CircleAvatar(
+  //         child: Image(
+  //           image: CachedNetworkImageProvider(
+  //             userInfo.avatar ?? ""
+  //           ),
+  //         ),
+  //       ),
+  //       title: Text(userInfo.login ?? ""),
+  //       onTap: () {
+  //         setState(() {
+  //           GithubAccount().logout();
+  //         });
+  //       },
+  //     );
+  //   }
+  // }
 
 
   @override
@@ -217,6 +226,28 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
               Settings.downloadLimit = value;
             });
           }
+        ),
+        SettingItem(
+            SettingItemType.Options,
+            kt("multi_thread_limit"),
+            value: Settings.multiThreadLimit,
+            data: [
+              OptionItem("1", 1),
+              OptionItem("2", 2),
+              OptionItem("3", 3),
+              OptionItem("4", 4),
+              OptionItem("5", 5),
+              OptionItem("6", 6),
+              OptionItem("7", 7),
+              OptionItem("8", 8),
+              OptionItem("9", 9),
+            ],
+            onChange: (value) {
+              setState(() {
+                DownloadManager().multiThreadLimit = value;
+                Settings.multiThreadLimit = value;
+              });
+            }
         ),
         SettingItem(
           SettingItemType.Switch,

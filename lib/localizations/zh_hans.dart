@@ -59,4 +59,5 @@ const Map words = {
   "clear_cache": "清空缓存，请确认",
   "clear": "清空缓存",
   "source": "来源",
+  "multi_thread_limit": "下载线程数",
 };

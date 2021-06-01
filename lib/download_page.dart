@@ -220,6 +220,7 @@ class _ChapterCellState extends State<ChapterCell> {
           child: ListTile(
             title: Text(queueItem.info.displayTitle),
             subtitle: Text.rich(
+              queueItem.downloader.prepared ?
               TextSpan(
                 children: [
                   TextSpan(
@@ -238,7 +239,7 @@ class _ChapterCellState extends State<ChapterCell> {
                     style: theme.textTheme.caption,
                   )
                 ]
-              )
+              ) : TextSpan(text: "...")
             ),
             trailing: extendButtons(context, queueItem),
             onTap: widget.onTap,

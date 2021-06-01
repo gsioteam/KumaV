@@ -15,6 +15,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.6.0"
+  async:
+    dependency: transitive
+    description:
+      name: async
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.7.0"
   characters:
     dependency: transitive
     description:
@@ -67,9 +74,9 @@ packages:
   dio_http2_adapter:
     dependency: "direct main"
     description:
-      name: dio_http2_adapter
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "../http2_adapter"
+      relative: true
+    source: path
     version: "2.0.0"
   ffi:
     dependency: "direct main"
@@ -103,7 +110,7 @@ packages:
       name: http
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.13.1"
+    version: "0.13.3"
   http2:
     dependency: transitive
     description:

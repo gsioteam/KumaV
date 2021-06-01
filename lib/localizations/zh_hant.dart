@@ -58,5 +58,6 @@ const Map words = {
   "cached_size": "緩存空間",
   "clear_cache": "清空緩存，請確認",
   "clear": "清空緩存",
-  "source": "來源"
+  "source": "來源",
+  "multi_thread_limit": "下載線程數",
 };
