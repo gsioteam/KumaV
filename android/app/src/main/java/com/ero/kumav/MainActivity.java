@@ -7,8 +7,7 @@ import android.view.KeyEvent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.qlp.glib.GlibPlugin;
-import com.qlp.kuma.KumaPlayerPlugin;
+//import com.qlp.glib.GlibPlugin;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,16 +24,16 @@ public class MainActivity extends FlutterActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        if (is_debug) {
-            File dir = getFilesDir();
-            String path = dir.getPath() + "/debug";
-            try {
-                copyDir("debug", path);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            GlibPlugin.setDebug(path);
-        }
+//        if (is_debug) {
+//            File dir = getFilesDir();
+//            String path = dir.getPath() + "/debug";
+//            try {
+//                copyDir("debug", path);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            GlibPlugin.setDebug(path);
+//        }
         super.onCreate(savedInstanceState);
     }
 

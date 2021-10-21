@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/src/material/material_button.dart';
 import 'package:flutter/src/foundation/basic_types.dart';
-import 'package:flutter/src/rendering/mouse_cursor.dart';
+import 'package:flutter/src/services/mouse_cursor.dart';
 import 'package:flutter/src/material/button_theme.dart';
 import 'dart:ui';
 import 'package:flutter/src/painting/edge_insets.dart';
@@ -51,6 +51,7 @@ import 'package:flutter/src/painting/box_fit.dart';
 import 'package:flutter/src/painting/decoration_image.dart';
 import 'dart:io';
 import 'package:flutter/src/services/asset_bundle.dart';
+import 'package:flutter/src/widgets/scroll_configuration.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/painting/box_decoration.dart';
 import 'package:flutter/src/painting/box_border.dart';
@@ -58,6 +59,7 @@ import 'package:flutter/src/painting/border_radius.dart';
 import 'package:flutter/src/painting/gradient.dart';
 import 'package:flutter/src/painting/box_shadow.dart';
 import 'package:flutter/src/painting/text_span.dart';
+import 'package:flutter/src/gestures/events.dart';
 import 'package:flutter/src/widgets/widget_span.dart';
 
 Register register = Register(() {
@@ -83,18 +85,18 @@ Register register = Register(() {
         hoverElevation: node.s<double>("hoverElevation"),
         highlightElevation: node.s<double>("highlightElevation"),
         disabledElevation: node.s<double>("disabledElevation"),
-        padding: node.s<EdgeInsets>("padding"),
+        padding: node.s<EdgeInsetsGeometry>("padding"),
         visualDensity: node.s<VisualDensity>("visualDensity"),
         shape: node.s<ShapeBorder>("shape"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.none),
+        clipBehavior: (node.s<Clip>("clipBehavior"))!,
         focusNode: node.s<FocusNode>("focusNode"),
-        autofocus: node.s<bool>("autofocus", false),
+        autofocus: (node.s<bool>("autofocus"))!,
         materialTapTargetSize:
             node.s<MaterialTapTargetSize>("materialTapTargetSize"),
         animationDuration: node.s<Duration>("animationDuration"),
         minWidth: node.s<double>("minWidth"),
         height: node.s<double>("height"),
-        enableFeedback: node.s<bool>("enableFeedback", true),
+        enableFeedback: (node.s<bool>("enableFeedback"))!,
         child: node.child<Widget>());
   });
   XmlLayout.registerInline(MouseCursor, "defer", true, (node, method) {
@@ -105,53 +107,25 @@ Register register = Register(() {
   });
   XmlLayout.registerEnum(ButtonTextTheme.values);
   XmlLayout.registerInline(Color, "", false, (node, method) {
-    return Color(int.tryParse(method[0]));
+    return Color(method[0].toInt());
   });
   XmlLayout.registerInline(Color, "fromARGB", false, (node, method) {
-    return Color.fromARGB(int.tryParse(method[0]), int.tryParse(method[1]),
-        int.tryParse(method[2]), int.tryParse(method[3]));
+    return Color.fromARGB(method[0].toInt(), method[1].toInt(),
+        method[2].toInt(), method[3].toInt());
   });
   XmlLayout.registerInline(Color, "fromRGBO", false, (node, method) {
-    return Color.fromRGBO(int.tryParse(method[0]), int.tryParse(method[1]),
-        int.tryParse(method[2]), double.tryParse(method[3]));
+    return Color.fromRGBO(method[0].toInt(), method[1].toInt(),
+        method[2].toInt(), method[3].toDouble());
   });
   XmlLayout.registerEnum(Brightness.values);
-  XmlLayout.registerInline(EdgeInsets, "fromLTRB", false, (node, method) {
-    return EdgeInsets.fromLTRB(
-        double.tryParse(method[0]),
-        double.tryParse(method[1]),
-        double.tryParse(method[2]),
-        double.tryParse(method[3]));
-  });
-  XmlLayout.registerInline(EdgeInsets, "all", false, (node, method) {
-    return EdgeInsets.all(double.tryParse(method[0]));
-  });
-  XmlLayout.register("EdgeInsets.only", (node, key) {
-    return EdgeInsets.only(
-        left: node.s<double>("left", 0.0),
-        top: node.s<double>("top", 0.0),
-        right: node.s<double>("right", 0.0),
-        bottom: node.s<double>("bottom", 0.0));
-  });
-  XmlLayout.register("EdgeInsets.symmetric", (node, key) {
-    return EdgeInsets.symmetric(
-        vertical: node.s<double>("vertical", 0.0),
-        horizontal: node.s<double>("horizontal", 0.0));
-  });
-  XmlLayout.register("EdgeInsets.fromWindowPadding", (node, key) {
-    return EdgeInsets.fromWindowPadding(
-        node.s<WindowPadding>("arg:0"), node.s<double>("arg:1"));
-  });
-  XmlLayout.registerInline(EdgeInsets, "zero", true, (node, method) {
-    return EdgeInsets.zero;
-  });
-  XmlLayout.registerInline(WindowPadding, "zero", true, (node, method) {
-    return WindowPadding.zero;
+  XmlLayout.registerInline(EdgeInsetsGeometry, "infinity", true,
+      (node, method) {
+    return EdgeInsetsGeometry.infinity;
   });
   XmlLayout.register("VisualDensity", (node, key) {
     return VisualDensity(
-        horizontal: node.s<double>("horizontal", 0.0),
-        vertical: node.s<double>("vertical", 0.0));
+        horizontal: (node.s<double>("horizontal"))!,
+        vertical: (node.s<double>("vertical"))!);
   });
   XmlLayout.registerInline(VisualDensity, "standard", true, (node, method) {
     return VisualDensity.standard;
@@ -171,19 +145,20 @@ Register register = Register(() {
     return FocusNode(
         debugLabel: node.s<String>("debugLabel"),
         onKey: node.s<dynamic Function(FocusNode, RawKeyEvent)>("onKey"),
-        skipTraversal: node.s<bool>("skipTraversal", false),
-        canRequestFocus: node.s<bool>("canRequestFocus", true),
-        descendantsAreFocusable: node.s<bool>("descendantsAreFocusable", true));
+        skipTraversal: (node.s<bool>("skipTraversal", false))!,
+        canRequestFocus: (node.s<bool>("canRequestFocus", true))!,
+        descendantsAreFocusable:
+            (node.s<bool>("descendantsAreFocusable", true))!);
   });
   XmlLayout.registerEnum(MaterialTapTargetSize.values);
   XmlLayout.register("Duration", (node, key) {
     return Duration(
-        days: node.s<int>("days"),
-        hours: node.s<int>("hours"),
-        minutes: node.s<int>("minutes"),
-        seconds: node.s<int>("seconds"),
-        milliseconds: node.s<int>("milliseconds"),
-        microseconds: node.s<int>("microseconds"));
+        days: (node.s<int>("days", 0))!,
+        hours: (node.s<int>("hours", 0))!,
+        minutes: (node.s<int>("minutes", 0))!,
+        seconds: (node.s<int>("seconds", 0))!,
+        milliseconds: (node.s<int>("milliseconds", 0))!,
+        microseconds: (node.s<int>("microseconds", 0))!);
   });
   XmlLayout.registerInline(Duration, "zero", true, (node, method) {
     return Duration.zero;
@@ -191,14 +166,14 @@ Register register = Register(() {
   XmlLayout.register("Column", (node, key) {
     return Column(
         key: key,
-        mainAxisAlignment: node.s<MainAxisAlignment>(
-            "mainAxisAlignment", MainAxisAlignment.start),
-        mainAxisSize: node.s<MainAxisSize>("mainAxisSize", MainAxisSize.max),
-        crossAxisAlignment: node.s<CrossAxisAlignment>(
-            "crossAxisAlignment", CrossAxisAlignment.center),
+        mainAxisAlignment: (node.s<MainAxisAlignment>(
+            "mainAxisAlignment", MainAxisAlignment.start))!,
+        mainAxisSize: (node.s<MainAxisSize>("mainAxisSize", MainAxisSize.max))!,
+        crossAxisAlignment: (node.s<CrossAxisAlignment>(
+            "crossAxisAlignment", CrossAxisAlignment.center))!,
         textDirection: node.s<TextDirection>("textDirection"),
-        verticalDirection: node.s<VerticalDirection>(
-            "verticalDirection", VerticalDirection.down),
+        verticalDirection: (node.s<VerticalDirection>(
+            "verticalDirection", VerticalDirection.down))!,
         textBaseline: node.s<TextBaseline>("textBaseline"),
         children: node.children<Widget>());
   });
@@ -227,17 +202,17 @@ Register register = Register(() {
         bottomSheet: node.s<Widget>("bottomSheet"),
         backgroundColor: node.s<Color>("backgroundColor"),
         resizeToAvoidBottomInset: node.s<bool>("resizeToAvoidBottomInset"),
-        primary: node.s<bool>("primary", true),
-        drawerDragStartBehavior: node.s<DragStartBehavior>(
-            "drawerDragStartBehavior", DragStartBehavior.start),
-        extendBody: node.s<bool>("extendBody", false),
-        extendBodyBehindAppBar: node.s<bool>("extendBodyBehindAppBar", false),
+        primary: (node.s<bool>("primary"))!,
+        drawerDragStartBehavior:
+            (node.s<DragStartBehavior>("drawerDragStartBehavior"))!,
+        extendBody: (node.s<bool>("extendBody"))!,
+        extendBodyBehindAppBar: (node.s<bool>("extendBodyBehindAppBar"))!,
         drawerScrimColor: node.s<Color>("drawerScrimColor"),
         drawerEdgeDragWidth: node.s<double>("drawerEdgeDragWidth"),
         drawerEnableOpenDragGesture:
-            node.s<bool>("drawerEnableOpenDragGesture", true),
+            (node.s<bool>("drawerEnableOpenDragGesture"))!,
         endDrawerEnableOpenDragGesture:
-            node.s<bool>("endDrawerEnableOpenDragGesture", true),
+            (node.s<bool>("endDrawerEnableOpenDragGesture"))!,
         restorationId: node.s<String>("restorationId"));
   });
   XmlLayout.registerInline(FloatingActionButtonLocation, "startTop", true,
@@ -318,7 +293,7 @@ Register register = Register(() {
   });
   XmlLayout.registerEnum(DragStartBehavior.values);
   XmlLayout.register("Text", (node, key) {
-    return Text(node.s<String>("arg:0") ?? node.t<String>(),
+    return Text(((node.s<String?>("arg:0") ?? node.t<String>())),
         key: key,
         style: node.s<TextStyle>("style"),
         strutStyle: node.s<StrutStyle>("strutStyle"),
@@ -334,7 +309,8 @@ Register register = Register(() {
         textHeightBehavior: node.s<TextHeightBehavior>("textHeightBehavior"));
   });
   XmlLayout.register("Text.rich", (node, key) {
-    return Text.rich(node.s<InlineSpan>("arg:0") ?? node.child<InlineSpan>(),
+    return Text.rich(
+        ((node.s<InlineSpan?>("arg:0") ?? node.child<InlineSpan>()))!,
         key: key,
         style: node.s<TextStyle>("style"),
         strutStyle: node.s<StrutStyle>("strutStyle"),
@@ -351,7 +327,7 @@ Register register = Register(() {
   });
   XmlLayout.register("TextStyle", (node, key) {
     return TextStyle(
-        inherit: node.s<bool>("inherit", true),
+        inherit: (node.s<bool>("inherit"))!,
         color: node.s<Color>("color"),
         backgroundColor: node.s<Color>("backgroundColor"),
         fontSize: node.s<double>("fontSize"),
@@ -361,6 +337,8 @@ Register register = Register(() {
         wordSpacing: node.s<double>("wordSpacing"),
         textBaseline: node.s<TextBaseline>("textBaseline"),
         height: node.s<double>("height"),
+        leadingDistribution:
+            node.s<TextLeadingDistribution>("leadingDistribution"),
         locale: node.s<Locale>("locale"),
         foreground: node.s<Paint>("foreground"),
         background: node.s<Paint>("background"),
@@ -409,18 +387,19 @@ Register register = Register(() {
     return FontWeight.bold;
   });
   XmlLayout.registerEnum(FontStyle.values);
+  XmlLayout.registerEnum(TextLeadingDistribution.values);
   XmlLayout.registerInline(Locale, "", false, (node, method) {
-    return Locale(jsonDecode(method[0]), jsonDecode(method[1]));
+    return Locale(method[0].toString(), method[1]?.toString());
   });
   XmlLayout.register("Locale.fromSubtags", (node, key) {
     return Locale.fromSubtags(
-        languageCode: node.s<String>("languageCode"),
+        languageCode: (node.s<String>("languageCode", 'und'))!,
         scriptCode: node.s<String>("scriptCode"),
         countryCode: node.s<String>("countryCode"));
   });
   XmlLayout.register("TextDecoration.combine", (node, key) {
-    return TextDecoration.combine(node.s<List<TextDecoration>>("arg:0") ??
-        node.child<List<TextDecoration>>());
+    return TextDecoration.combine(((node.s<List<TextDecoration>?>("arg:0") ??
+        node.child<List<TextDecoration>>()))!);
   });
   XmlLayout.registerInline(TextDecoration, "none", true, (node, method) {
     return TextDecoration.none;
@@ -441,6 +420,8 @@ Register register = Register(() {
         fontFamilyFallback: node.array<String>("fontFamilyFallback"),
         fontSize: node.s<double>("fontSize"),
         height: node.s<double>("height"),
+        leadingDistribution:
+            node.s<TextLeadingDistribution>("leadingDistribution"),
         leading: node.s<double>("leading"),
         fontWeight: node.s<FontWeight>("fontWeight"),
         fontStyle: node.s<FontStyle>("fontStyle"),
@@ -450,11 +431,13 @@ Register register = Register(() {
   });
   XmlLayout.register("StrutStyle.fromTextStyle", (node, key) {
     return StrutStyle.fromTextStyle(
-        node.s<TextStyle>("arg:0") ?? node.child<TextStyle>(),
+        ((node.s<TextStyle?>("arg:0") ?? node.child<TextStyle>()))!,
         fontFamily: node.s<String>("fontFamily"),
         fontFamilyFallback: node.array<String>("fontFamilyFallback"),
         fontSize: node.s<double>("fontSize"),
         height: node.s<double>("height"),
+        leadingDistribution:
+            node.s<TextLeadingDistribution>("leadingDistribution"),
         leading: node.s<double>("leading"),
         fontWeight: node.s<FontWeight>("fontWeight"),
         fontStyle: node.s<FontStyle>("fontStyle"),
@@ -470,15 +453,17 @@ Register register = Register(() {
   XmlLayout.registerEnum(TextWidthBasis.values);
   XmlLayout.register("TextHeightBehavior", (node, key) {
     return TextHeightBehavior(
-        applyHeightToFirstAscent: node.s<bool>("applyHeightToFirstAscent"),
-        applyHeightToLastDescent: node.s<bool>("applyHeightToLastDescent"));
+        applyHeightToFirstAscent: (node.s<bool>("applyHeightToFirstAscent"))!,
+        applyHeightToLastDescent: (node.s<bool>("applyHeightToLastDescent"))!,
+        leadingDistribution:
+            (node.s<TextLeadingDistribution>("leadingDistribution"))!);
   });
   XmlLayout.registerInline(TextHeightBehavior, "fromEncoded", false,
       (node, method) {
-    return TextHeightBehavior.fromEncoded(int.tryParse(method[0]));
+    return TextHeightBehavior.fromEncoded(method[0].toInt());
   });
   XmlLayout.register("Icon", (node, key) {
-    return Icon(node.s<IconData>("arg:0") ?? node.child<IconData>(),
+    return Icon((node.s<IconData?>("arg:0") ?? node.child<IconData>()),
         key: key,
         size: node.s<double>("size"),
         color: node.s<Color>("color"),
@@ -488,137 +473,138 @@ Register register = Register(() {
   XmlLayout.register("GridView", (node, key) {
     return GridView(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
-        padding: node.s<EdgeInsets>("padding"),
-        gridDelegate: node.s<SliverGridDelegate>("gridDelegate"),
-        addAutomaticKeepAlives: node.s<bool>("addAutomaticKeepAlives", true),
-        addRepaintBoundaries: node.s<bool>("addRepaintBoundaries", true),
-        addSemanticIndexes: node.s<bool>("addSemanticIndexes", true),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
+        padding: node.s<EdgeInsetsGeometry>("padding"),
+        gridDelegate: (node.s<SliverGridDelegate>("gridDelegate"))!,
+        addAutomaticKeepAlives: (node.s<bool>("addAutomaticKeepAlives", true))!,
+        addRepaintBoundaries: (node.s<bool>("addRepaintBoundaries", true))!,
+        addSemanticIndexes: (node.s<bool>("addSemanticIndexes", true))!,
         cacheExtent: node.s<double>("cacheExtent"),
         children: node.children<Widget>(),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"));
   });
   XmlLayout.register("GridView.builder", (node, key) {
     return GridView.builder(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
-        padding: node.s<EdgeInsets>("padding"),
-        gridDelegate: node.s<SliverGridDelegate>("gridDelegate"),
-        itemBuilder: node.s<Widget Function(BuildContext, int)>("itemBuilder"),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
+        padding: node.s<EdgeInsetsGeometry>("padding"),
+        gridDelegate: (node.s<SliverGridDelegate>("gridDelegate"))!,
+        itemBuilder:
+            (node.s<Widget Function(BuildContext, int)>("itemBuilder"))!,
         itemCount: node.s<int>("itemCount"),
-        addAutomaticKeepAlives: node.s<bool>("addAutomaticKeepAlives", true),
-        addRepaintBoundaries: node.s<bool>("addRepaintBoundaries", true),
-        addSemanticIndexes: node.s<bool>("addSemanticIndexes", true),
+        addAutomaticKeepAlives: (node.s<bool>("addAutomaticKeepAlives", true))!,
+        addRepaintBoundaries: (node.s<bool>("addRepaintBoundaries", true))!,
+        addSemanticIndexes: (node.s<bool>("addSemanticIndexes", true))!,
         cacheExtent: node.s<double>("cacheExtent"),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge));
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!);
   });
   XmlLayout.register("GridView.custom", (node, key) {
     return GridView.custom(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
-        padding: node.s<EdgeInsets>("padding"),
-        gridDelegate: node.s<SliverGridDelegate>("gridDelegate"),
-        childrenDelegate: node.s<SliverChildDelegate>("childrenDelegate"),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
+        padding: node.s<EdgeInsetsGeometry>("padding"),
+        gridDelegate: (node.s<SliverGridDelegate>("gridDelegate"))!,
+        childrenDelegate: (node.s<SliverChildDelegate>("childrenDelegate"))!,
         cacheExtent: node.s<double>("cacheExtent"),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge));
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!);
   });
   XmlLayout.register("GridView.count", (node, key) {
     return GridView.count(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
-        padding: node.s<EdgeInsets>("padding"),
-        crossAxisCount: node.s<int>("crossAxisCount"),
-        mainAxisSpacing: node.s<double>("mainAxisSpacing", 0.0),
-        crossAxisSpacing: node.s<double>("crossAxisSpacing", 0.0),
-        childAspectRatio: node.s<double>("childAspectRatio", 1.0),
-        addAutomaticKeepAlives: node.s<bool>("addAutomaticKeepAlives", true),
-        addRepaintBoundaries: node.s<bool>("addRepaintBoundaries", true),
-        addSemanticIndexes: node.s<bool>("addSemanticIndexes", true),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
+        padding: node.s<EdgeInsetsGeometry>("padding"),
+        crossAxisCount: (node.s<int>("crossAxisCount"))!,
+        mainAxisSpacing: (node.s<double>("mainAxisSpacing", 0.0))!,
+        crossAxisSpacing: (node.s<double>("crossAxisSpacing", 0.0))!,
+        childAspectRatio: (node.s<double>("childAspectRatio", 1.0))!,
+        addAutomaticKeepAlives: (node.s<bool>("addAutomaticKeepAlives", true))!,
+        addRepaintBoundaries: (node.s<bool>("addRepaintBoundaries", true))!,
+        addSemanticIndexes: (node.s<bool>("addSemanticIndexes", true))!,
         cacheExtent: node.s<double>("cacheExtent"),
         children: node.children<Widget>(),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge));
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!);
   });
   XmlLayout.register("GridView.extent", (node, key) {
     return GridView.extent(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
-        padding: node.s<EdgeInsets>("padding"),
-        maxCrossAxisExtent: node.s<double>("maxCrossAxisExtent"),
-        mainAxisSpacing: node.s<double>("mainAxisSpacing", 0.0),
-        crossAxisSpacing: node.s<double>("crossAxisSpacing", 0.0),
-        childAspectRatio: node.s<double>("childAspectRatio", 1.0),
-        addAutomaticKeepAlives: node.s<bool>("addAutomaticKeepAlives", true),
-        addRepaintBoundaries: node.s<bool>("addRepaintBoundaries", true),
-        addSemanticIndexes: node.s<bool>("addSemanticIndexes", true),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
+        padding: node.s<EdgeInsetsGeometry>("padding"),
+        maxCrossAxisExtent: (node.s<double>("maxCrossAxisExtent"))!,
+        mainAxisSpacing: (node.s<double>("mainAxisSpacing", 0.0))!,
+        crossAxisSpacing: (node.s<double>("crossAxisSpacing", 0.0))!,
+        childAspectRatio: (node.s<double>("childAspectRatio", 1.0))!,
+        addAutomaticKeepAlives: (node.s<bool>("addAutomaticKeepAlives", true))!,
+        addRepaintBoundaries: (node.s<bool>("addRepaintBoundaries", true))!,
+        addSemanticIndexes: (node.s<bool>("addSemanticIndexes", true))!,
         cacheExtent: node.s<double>("cacheExtent"),
         children: node.children<Widget>(),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge));
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!);
   });
   XmlLayout.registerEnum(Axis.values);
   XmlLayout.register("ScrollController", (node, key) {
     return ScrollController(
-        initialScrollOffset: node.s<double>("initialScrollOffset", 0.0),
-        keepScrollOffset: node.s<bool>("keepScrollOffset", true),
+        initialScrollOffset: (node.s<double>("initialScrollOffset", 0.0))!,
+        keepScrollOffset: (node.s<bool>("keepScrollOffset"))!,
         debugLabel: node.s<String>("debugLabel"));
   });
   XmlLayout.register("ScrollPhysics", (node, key) {
@@ -629,28 +615,28 @@ Register register = Register(() {
     return Container(
         key: key,
         alignment: node.s<AlignmentGeometry>("alignment"),
-        padding: node.s<EdgeInsets>("padding"),
+        padding: node.s<EdgeInsetsGeometry>("padding"),
         color: node.s<Color>("color"),
         decoration: node.s<Decoration>("decoration"),
         foregroundDecoration: node.s<Decoration>("foregroundDecoration"),
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         constraints: node.s<BoxConstraints>("constraints"),
-        margin: node.s<EdgeInsets>("margin"),
+        margin: node.s<EdgeInsetsGeometry>("margin"),
         transform: node.s<Matrix4>("transform"),
         transformAlignment: node.s<AlignmentGeometry>("transformAlignment"),
         child: node.child<Widget>(),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.none));
+        clipBehavior: (node.s<Clip>("clipBehavior"))!);
   });
   XmlLayout.register("BoxConstraints", (node, key) {
     return BoxConstraints(
-        minWidth: node.s<double>("minWidth", 0.0),
-        maxWidth: node.s<double>("maxWidth", double.infinity),
-        minHeight: node.s<double>("minHeight", 0.0),
-        maxHeight: node.s<double>("maxHeight", double.infinity));
+        minWidth: (node.s<double>("minWidth"))!,
+        maxWidth: (node.s<double>("maxWidth"))!,
+        minHeight: (node.s<double>("minHeight"))!,
+        maxHeight: (node.s<double>("maxHeight"))!);
   });
   XmlLayout.registerInline(BoxConstraints, "tight", false, (node, method) {
-    return BoxConstraints.tight(node.v<Size>(method[0]));
+    return BoxConstraints.tight((node.v<Size>(method[0]))!);
   });
   XmlLayout.register("BoxConstraints.tightFor", (node, key) {
     return BoxConstraints.tightFor(
@@ -658,11 +644,11 @@ Register register = Register(() {
   });
   XmlLayout.register("BoxConstraints.tightForFinite", (node, key) {
     return BoxConstraints.tightForFinite(
-        width: node.s<double>("width", double.infinity),
-        height: node.s<double>("height", double.infinity));
+        width: (node.s<double>("width", double.infinity))!,
+        height: (node.s<double>("height", double.infinity))!);
   });
   XmlLayout.registerInline(BoxConstraints, "loose", false, (node, method) {
-    return BoxConstraints.loose(node.v<Size>(method[0]));
+    return BoxConstraints.loose((node.v<Size>(method[0]))!);
   });
   XmlLayout.register("BoxConstraints.expand", (node, key) {
     return BoxConstraints.expand(
@@ -670,26 +656,26 @@ Register register = Register(() {
   });
   XmlLayout.registerInline(Matrix4, "", false, (node, method) {
     return Matrix4(
-        double.tryParse(method[0]),
-        double.tryParse(method[1]),
-        double.tryParse(method[2]),
-        double.tryParse(method[3]),
-        double.tryParse(method[4]),
-        double.tryParse(method[5]),
-        double.tryParse(method[6]),
-        double.tryParse(method[7]),
-        double.tryParse(method[8]),
-        double.tryParse(method[9]),
-        double.tryParse(method[10]),
-        double.tryParse(method[11]),
-        double.tryParse(method[12]),
-        double.tryParse(method[13]),
-        double.tryParse(method[14]),
-        double.tryParse(method[15]));
+        method[0].toDouble(),
+        method[1].toDouble(),
+        method[2].toDouble(),
+        method[3].toDouble(),
+        method[4].toDouble(),
+        method[5].toDouble(),
+        method[6].toDouble(),
+        method[7].toDouble(),
+        method[8].toDouble(),
+        method[9].toDouble(),
+        method[10].toDouble(),
+        method[11].toDouble(),
+        method[12].toDouble(),
+        method[13].toDouble(),
+        method[14].toDouble(),
+        method[15].toDouble());
   });
   XmlLayout.register("Matrix4.fromList", (node, key) {
     return Matrix4.fromList(
-        node.s<List<double>>("arg:0") ?? node.child<List<double>>());
+        ((node.s<List<double>?>("arg:0") ?? node.child<List<double>>()))!);
   });
   XmlLayout.registerInline(Matrix4, "zero", false, (node, method) {
     return Matrix4.zero();
@@ -698,71 +684,70 @@ Register register = Register(() {
     return Matrix4.identity();
   });
   XmlLayout.registerInline(Matrix4, "copy", false, (node, method) {
-    return Matrix4.copy(node.v<Matrix4>(method[0]));
+    return Matrix4.copy((node.v<Matrix4>(method[0]))!);
   });
   XmlLayout.registerInline(Matrix4, "inverted", false, (node, method) {
-    return Matrix4.inverted(node.v<Matrix4>(method[0]));
+    return Matrix4.inverted((node.v<Matrix4>(method[0]))!);
   });
   XmlLayout.registerInline(Matrix4, "columns", false, (node, method) {
     return Matrix4.columns(
-        node.v<Vector4>(method[0]),
-        node.v<Vector4>(method[1]),
-        node.v<Vector4>(method[2]),
-        node.v<Vector4>(method[3]));
+        (node.v<Vector4>(method[0]))!,
+        (node.v<Vector4>(method[1]))!,
+        (node.v<Vector4>(method[2]))!,
+        (node.v<Vector4>(method[3]))!);
   });
   XmlLayout.registerInline(Matrix4, "outer", false, (node, method) {
     return Matrix4.outer(
-        node.v<Vector4>(method[0]), node.v<Vector4>(method[1]));
+        (node.v<Vector4>(method[0]))!, (node.v<Vector4>(method[1]))!);
   });
   XmlLayout.registerInline(Matrix4, "rotationX", false, (node, method) {
-    return Matrix4.rotationX(double.tryParse(method[0]));
+    return Matrix4.rotationX(method[0].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "rotationY", false, (node, method) {
-    return Matrix4.rotationY(double.tryParse(method[0]));
+    return Matrix4.rotationY(method[0].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "rotationZ", false, (node, method) {
-    return Matrix4.rotationZ(double.tryParse(method[0]));
+    return Matrix4.rotationZ(method[0].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "translation", false, (node, method) {
-    return Matrix4.translation(node.v<Vector3>(method[0]));
+    return Matrix4.translation((node.v<Vector3>(method[0]))!);
   });
   XmlLayout.registerInline(Matrix4, "translationValues", false, (node, method) {
-    return Matrix4.translationValues(double.tryParse(method[0]),
-        double.tryParse(method[1]), double.tryParse(method[2]));
+    return Matrix4.translationValues(
+        method[0].toDouble(), method[1].toDouble(), method[2].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "diagonal3", false, (node, method) {
-    return Matrix4.diagonal3(node.v<Vector3>(method[0]));
+    return Matrix4.diagonal3((node.v<Vector3>(method[0]))!);
   });
   XmlLayout.registerInline(Matrix4, "diagonal3Values", false, (node, method) {
-    return Matrix4.diagonal3Values(double.tryParse(method[0]),
-        double.tryParse(method[1]), double.tryParse(method[2]));
+    return Matrix4.diagonal3Values(
+        method[0].toDouble(), method[1].toDouble(), method[2].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "skewX", false, (node, method) {
-    return Matrix4.skewX(double.tryParse(method[0]));
+    return Matrix4.skewX(method[0].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "skewY", false, (node, method) {
-    return Matrix4.skewY(double.tryParse(method[0]));
+    return Matrix4.skewY(method[0].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "skew", false, (node, method) {
-    return Matrix4.skew(double.tryParse(method[0]), double.tryParse(method[1]));
+    return Matrix4.skew(method[0].toDouble(), method[1].toDouble());
   });
   XmlLayout.registerInline(Matrix4, "fromFloat64List", false, (node, method) {
-    return Matrix4.fromFloat64List(node.v<Float64List>(method[0]));
+    return Matrix4.fromFloat64List((node.v<Float64List>(method[0]))!);
   });
   XmlLayout.register("Matrix4.fromBuffer", (node, key) {
     return Matrix4.fromBuffer(
-        node.s<ByteBuffer>("arg:0"), node.s<int>("arg:1"));
+        (node.s<ByteBuffer>("arg:0"))!, (node.s<int>("arg:1"))!);
   });
   XmlLayout.registerInline(Matrix4, "compose", false, (node, method) {
-    return Matrix4.compose(node.v<Vector3>(method[0]),
-        node.v<Quaternion>(method[1]), node.v<Vector3>(method[2]));
+    return Matrix4.compose((node.v<Vector3>(method[0]))!,
+        (node.v<Quaternion>(method[1]))!, (node.v<Vector3>(method[2]))!);
   });
   XmlLayout.register("AppBar", (node, key) {
     return AppBar(
         key: key,
         leading: node.s<Widget>("leading"),
-        automaticallyImplyLeading:
-            node.s<bool>("automaticallyImplyLeading", true),
+        automaticallyImplyLeading: (node.s<bool>("automaticallyImplyLeading"))!,
         title: node.s<Widget>("title"),
         actions: node.array<Widget>("actions"),
         flexibleSpace: node.s<Widget>("flexibleSpace"),
@@ -776,12 +761,12 @@ Register register = Register(() {
         iconTheme: node.s<IconThemeData>("iconTheme"),
         actionsIconTheme: node.s<IconThemeData>("actionsIconTheme"),
         textTheme: node.s<TextTheme>("textTheme"),
-        primary: node.s<bool>("primary", true),
+        primary: (node.s<bool>("primary"))!,
         centerTitle: node.s<bool>("centerTitle"),
-        excludeHeaderSemantics: node.s<bool>("excludeHeaderSemantics", false),
+        excludeHeaderSemantics: (node.s<bool>("excludeHeaderSemantics"))!,
         titleSpacing: node.s<double>("titleSpacing"),
-        toolbarOpacity: node.s<double>("toolbarOpacity", 1.0),
-        bottomOpacity: node.s<double>("bottomOpacity", 1.0),
+        toolbarOpacity: (node.s<double>("toolbarOpacity"))!,
+        bottomOpacity: (node.s<double>("bottomOpacity"))!,
         toolbarHeight: node.s<double>("toolbarHeight"),
         leadingWidth: node.s<double>("leadingWidth"),
         backwardsCompatibility: node.s<bool>("backwardsCompatibility"),
@@ -844,137 +829,138 @@ Register register = Register(() {
   XmlLayout.register("Image", (node, key) {
     return Image(
         key: key,
-        image: node.s<ImageProvider<Object>>("image"),
-        frameBuilder: node.s<Widget Function(BuildContext, Widget, int, bool)>(
+        image: (node.s<ImageProvider<Object>>("image"))!,
+        frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
             "frameBuilder"),
         loadingBuilder:
-            node.s<Widget Function(BuildContext, Widget, ImageChunkEvent)>(
+            node.s<Widget Function(BuildContext, Widget, ImageChunkEvent?)>(
                 "loadingBuilder"),
-        errorBuilder: node.s<Widget Function(BuildContext, Object, StackTrace)>(
-            "errorBuilder"),
+        errorBuilder:
+            node.s<Widget Function(BuildContext, Object, StackTrace?)>(
+                "errorBuilder"),
         semanticLabel: node.s<String>("semanticLabel"),
-        excludeFromSemantics: node.s<bool>("excludeFromSemantics", false),
+        excludeFromSemantics: (node.s<bool>("excludeFromSemantics"))!,
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         color: node.s<Color>("color"),
         colorBlendMode: node.s<BlendMode>("colorBlendMode"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
+        repeat: (node.s<ImageRepeat>("repeat"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        gaplessPlayback: node.s<bool>("gaplessPlayback", false),
-        isAntiAlias: node.s<bool>("isAntiAlias", false),
-        filterQuality:
-            node.s<FilterQuality>("filterQuality", FilterQuality.low));
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        gaplessPlayback: (node.s<bool>("gaplessPlayback"))!,
+        isAntiAlias: (node.s<bool>("isAntiAlias"))!,
+        filterQuality: (node.s<FilterQuality>("filterQuality"))!);
   });
   XmlLayout.register("Image.network", (node, key) {
-    return Image.network(node.s<String>("arg:0") ?? node.t<String>(),
+    return Image.network(((node.s<String?>("arg:0") ?? node.t<String>())),
         key: key,
-        scale: node.s<double>("scale", 1.0),
-        frameBuilder: node.s<Widget Function(BuildContext, Widget, int, bool)>(
+        scale: (node.s<double>("scale", 1.0))!,
+        frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
             "frameBuilder"),
         loadingBuilder:
-            node.s<Widget Function(BuildContext, Widget, ImageChunkEvent)>(
+            node.s<Widget Function(BuildContext, Widget, ImageChunkEvent?)>(
                 "loadingBuilder"),
-        errorBuilder: node.s<Widget Function(BuildContext, Object, StackTrace)>(
-            "errorBuilder"),
+        errorBuilder:
+            node.s<Widget Function(BuildContext, Object, StackTrace?)>(
+                "errorBuilder"),
         semanticLabel: node.s<String>("semanticLabel"),
-        excludeFromSemantics: node.s<bool>("excludeFromSemantics", false),
+        excludeFromSemantics: (node.s<bool>("excludeFromSemantics"))!,
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         color: node.s<Color>("color"),
         colorBlendMode: node.s<BlendMode>("colorBlendMode"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
+        repeat: (node.s<ImageRepeat>("repeat"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        gaplessPlayback: node.s<bool>("gaplessPlayback", false),
-        filterQuality:
-            node.s<FilterQuality>("filterQuality", FilterQuality.low),
-        isAntiAlias: node.s<bool>("isAntiAlias", false),
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        gaplessPlayback: (node.s<bool>("gaplessPlayback"))!,
+        filterQuality: (node.s<FilterQuality>("filterQuality"))!,
+        isAntiAlias: (node.s<bool>("isAntiAlias"))!,
         headers: node.s<Map<String, String>>("headers"),
         cacheWidth: node.s<int>("cacheWidth"),
         cacheHeight: node.s<int>("cacheHeight"));
   });
   XmlLayout.register("Image.file", (node, key) {
-    return Image.file(node.s<File>("arg:0") ?? node.child<File>(),
+    return Image.file(((node.s<File?>("arg:0") ?? node.child<File>()))!,
         key: key,
-        scale: node.s<double>("scale", 1.0),
-        frameBuilder: node.s<Widget Function(BuildContext, Widget, int, bool)>(
+        scale: (node.s<double>("scale", 1.0))!,
+        frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
             "frameBuilder"),
-        errorBuilder: node.s<Widget Function(BuildContext, Object, StackTrace)>(
-            "errorBuilder"),
+        errorBuilder:
+            node.s<Widget Function(BuildContext, Object, StackTrace?)>(
+                "errorBuilder"),
         semanticLabel: node.s<String>("semanticLabel"),
-        excludeFromSemantics: node.s<bool>("excludeFromSemantics", false),
+        excludeFromSemantics: (node.s<bool>("excludeFromSemantics"))!,
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         color: node.s<Color>("color"),
         colorBlendMode: node.s<BlendMode>("colorBlendMode"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
+        repeat: (node.s<ImageRepeat>("repeat"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        gaplessPlayback: node.s<bool>("gaplessPlayback", false),
-        isAntiAlias: node.s<bool>("isAntiAlias", false),
-        filterQuality:
-            node.s<FilterQuality>("filterQuality", FilterQuality.low),
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        gaplessPlayback: (node.s<bool>("gaplessPlayback"))!,
+        isAntiAlias: (node.s<bool>("isAntiAlias"))!,
+        filterQuality: (node.s<FilterQuality>("filterQuality"))!,
         cacheWidth: node.s<int>("cacheWidth"),
         cacheHeight: node.s<int>("cacheHeight"));
   });
   XmlLayout.register("Image.asset", (node, key) {
-    return Image.asset(node.s<String>("arg:0") ?? node.t<String>(),
+    return Image.asset(((node.s<String?>("arg:0") ?? node.t<String>())),
         key: key,
         bundle: node.s<AssetBundle>("bundle"),
-        frameBuilder: node.s<Widget Function(BuildContext, Widget, int, bool)>(
+        frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
             "frameBuilder"),
-        errorBuilder: node.s<Widget Function(BuildContext, Object, StackTrace)>(
-            "errorBuilder"),
+        errorBuilder:
+            node.s<Widget Function(BuildContext, Object, StackTrace?)>(
+                "errorBuilder"),
         semanticLabel: node.s<String>("semanticLabel"),
-        excludeFromSemantics: node.s<bool>("excludeFromSemantics", false),
+        excludeFromSemantics: (node.s<bool>("excludeFromSemantics"))!,
         scale: node.s<double>("scale"),
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         color: node.s<Color>("color"),
         colorBlendMode: node.s<BlendMode>("colorBlendMode"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
+        repeat: (node.s<ImageRepeat>("repeat"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        gaplessPlayback: node.s<bool>("gaplessPlayback", false),
-        isAntiAlias: node.s<bool>("isAntiAlias", false),
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        gaplessPlayback: (node.s<bool>("gaplessPlayback"))!,
+        isAntiAlias: (node.s<bool>("isAntiAlias"))!,
         package: node.s<String>("package"),
-        filterQuality:
-            node.s<FilterQuality>("filterQuality", FilterQuality.low),
+        filterQuality: (node.s<FilterQuality>("filterQuality"))!,
         cacheWidth: node.s<int>("cacheWidth"),
         cacheHeight: node.s<int>("cacheHeight"));
   });
   XmlLayout.register("Image.memory", (node, key) {
-    return Image.memory(node.s<Uint8List>("arg:0") ?? node.child<Uint8List>(),
+    return Image.memory(
+        ((node.s<Uint8List?>("arg:0") ?? node.child<Uint8List>()))!,
         key: key,
-        scale: node.s<double>("scale", 1.0),
-        frameBuilder: node.s<Widget Function(BuildContext, Widget, int, bool)>(
+        scale: (node.s<double>("scale", 1.0))!,
+        frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
             "frameBuilder"),
-        errorBuilder: node.s<Widget Function(BuildContext, Object, StackTrace)>(
-            "errorBuilder"),
+        errorBuilder:
+            node.s<Widget Function(BuildContext, Object, StackTrace?)>(
+                "errorBuilder"),
         semanticLabel: node.s<String>("semanticLabel"),
-        excludeFromSemantics: node.s<bool>("excludeFromSemantics", false),
+        excludeFromSemantics: (node.s<bool>("excludeFromSemantics"))!,
         width: node.s<double>("width"),
         height: node.s<double>("height"),
         color: node.s<Color>("color"),
         colorBlendMode: node.s<BlendMode>("colorBlendMode"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
+        repeat: (node.s<ImageRepeat>("repeat"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        gaplessPlayback: node.s<bool>("gaplessPlayback", false),
-        isAntiAlias: node.s<bool>("isAntiAlias", false),
-        filterQuality:
-            node.s<FilterQuality>("filterQuality", FilterQuality.low),
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        gaplessPlayback: (node.s<bool>("gaplessPlayback"))!,
+        isAntiAlias: (node.s<bool>("isAntiAlias"))!,
+        filterQuality: (node.s<FilterQuality>("filterQuality"))!,
         cacheWidth: node.s<int>("cacheWidth"),
         cacheHeight: node.s<int>("cacheHeight"));
   });
@@ -982,26 +968,27 @@ Register register = Register(() {
   XmlLayout.registerEnum(BoxFit.values);
   XmlLayout.registerEnum(ImageRepeat.values);
   XmlLayout.registerInline(Rect, "fromLTRB", false, (node, method) {
-    return Rect.fromLTRB(double.tryParse(method[0]), double.tryParse(method[1]),
-        double.tryParse(method[2]), double.tryParse(method[3]));
+    return Rect.fromLTRB(method[0].toDouble(), method[1].toDouble(),
+        method[2].toDouble(), method[3].toDouble());
   });
   XmlLayout.registerInline(Rect, "fromLTWH", false, (node, method) {
-    return Rect.fromLTWH(double.tryParse(method[0]), double.tryParse(method[1]),
-        double.tryParse(method[2]), double.tryParse(method[3]));
+    return Rect.fromLTWH(method[0].toDouble(), method[1].toDouble(),
+        method[2].toDouble(), method[3].toDouble());
   });
   XmlLayout.register("Rect.fromCircle", (node, key) {
     return Rect.fromCircle(
-        center: node.s<Offset>("center"), radius: node.s<double>("radius"));
+        center: (node.s<Offset>("center"))!,
+        radius: (node.s<double>("radius"))!);
   });
   XmlLayout.register("Rect.fromCenter", (node, key) {
     return Rect.fromCenter(
-        center: node.s<Offset>("center"),
-        width: node.s<double>("width"),
-        height: node.s<double>("height"));
+        center: (node.s<Offset>("center"))!,
+        width: (node.s<double>("width"))!,
+        height: (node.s<double>("height"))!);
   });
   XmlLayout.registerInline(Rect, "fromPoints", false, (node, method) {
     return Rect.fromPoints(
-        node.v<Offset>(method[0]), node.v<Offset>(method[1]));
+        (node.v<Offset>(method[0]))!, (node.v<Offset>(method[1]))!);
   });
   XmlLayout.registerInline(Rect, "zero", true, (node, method) {
     return Rect.zero;
@@ -1010,11 +997,11 @@ Register register = Register(() {
     return Rect.largest;
   });
   XmlLayout.registerInline(Offset, "", false, (node, method) {
-    return Offset(double.tryParse(method[0]), double.tryParse(method[1]));
+    return Offset(method[0].toDouble(), method[1].toDouble());
   });
   XmlLayout.registerInline(Offset, "fromDirection", false, (node, method) {
     return Offset.fromDirection(
-        double.tryParse(method[0]), double.tryParse(method[1]));
+        method[0].toDouble(), method[1]?.toDouble() ?? 1.0);
   });
   XmlLayout.registerInline(Offset, "zero", true, (node, method) {
     return Offset.zero;
@@ -1026,24 +1013,25 @@ Register register = Register(() {
   XmlLayout.register("CustomScrollView", (node, key) {
     return CustomScrollView(
         key: key,
-        scrollDirection: node.s<Axis>("scrollDirection", Axis.vertical),
-        reverse: node.s<bool>("reverse", false),
+        scrollDirection: (node.s<Axis>("scrollDirection", Axis.vertical))!,
+        reverse: (node.s<bool>("reverse", false))!,
         controller: node.s<ScrollController>("controller"),
         primary: node.s<bool>("primary"),
         physics: node.s<ScrollPhysics>("physics"),
-        shrinkWrap: node.s<bool>("shrinkWrap", false),
+        scrollBehavior: node.s<ScrollBehavior>("scrollBehavior"),
+        shrinkWrap: (node.s<bool>("shrinkWrap", false))!,
         center: node.s<Key>("center"),
-        anchor: node.s<double>("anchor", 0.0),
+        anchor: (node.s<double>("anchor", 0.0))!,
         cacheExtent: node.s<double>("cacheExtent"),
         slivers: node.children<Widget>(),
         semanticChildCount: node.s<int>("semanticChildCount"),
-        dragStartBehavior: node.s<DragStartBehavior>(
-            "dragStartBehavior", DragStartBehavior.start),
-        keyboardDismissBehavior: node.s<ScrollViewKeyboardDismissBehavior>(
+        dragStartBehavior: (node.s<DragStartBehavior>(
+            "dragStartBehavior", DragStartBehavior.start))!,
+        keyboardDismissBehavior: (node.s<ScrollViewKeyboardDismissBehavior>(
             "keyboardDismissBehavior",
-            ScrollViewKeyboardDismissBehavior.manual),
+            ScrollViewKeyboardDismissBehavior.manual))!,
         restorationId: node.s<String>("restorationId"),
-        clipBehavior: node.s<Clip>("clipBehavior", Clip.hardEdge));
+        clipBehavior: (node.s<Clip>("clipBehavior", Clip.hardEdge))!);
   });
   XmlLayout.register("SliverToBoxAdapter", (node, key) {
     return SliverToBoxAdapter(key: key, child: node.child<Widget>());
@@ -1051,25 +1039,25 @@ Register register = Register(() {
   XmlLayout.register("SliverGrid", (node, key) {
     return SliverGrid(
         key: key,
-        delegate: node.s<SliverChildDelegate>("delegate"),
-        gridDelegate: node.s<SliverGridDelegate>("gridDelegate"));
+        delegate: (node.s<SliverChildDelegate>("delegate"))!,
+        gridDelegate: (node.s<SliverGridDelegate>("gridDelegate"))!);
   });
   XmlLayout.register("SliverGrid.count", (node, key) {
     return SliverGrid.count(
         key: key,
-        crossAxisCount: node.s<int>("crossAxisCount"),
-        mainAxisSpacing: node.s<double>("mainAxisSpacing", 0.0),
-        crossAxisSpacing: node.s<double>("crossAxisSpacing", 0.0),
-        childAspectRatio: node.s<double>("childAspectRatio", 1.0),
+        crossAxisCount: (node.s<int>("crossAxisCount"))!,
+        mainAxisSpacing: (node.s<double>("mainAxisSpacing", 0.0))!,
+        crossAxisSpacing: (node.s<double>("crossAxisSpacing", 0.0))!,
+        childAspectRatio: (node.s<double>("childAspectRatio", 1.0))!,
         children: node.children<Widget>());
   });
   XmlLayout.register("SliverGrid.extent", (node, key) {
     return SliverGrid.extent(
         key: key,
-        maxCrossAxisExtent: node.s<double>("maxCrossAxisExtent"),
-        mainAxisSpacing: node.s<double>("mainAxisSpacing", 0.0),
-        crossAxisSpacing: node.s<double>("crossAxisSpacing", 0.0),
-        childAspectRatio: node.s<double>("childAspectRatio", 1.0),
+        maxCrossAxisExtent: (node.s<double>("maxCrossAxisExtent"))!,
+        mainAxisSpacing: (node.s<double>("mainAxisSpacing", 0.0))!,
+        crossAxisSpacing: (node.s<double>("crossAxisSpacing", 0.0))!,
+        childAspectRatio: (node.s<double>("childAspectRatio", 1.0))!,
         children: node.children<Widget>());
   });
   XmlLayout.register("BoxDecoration", (node, key) {
@@ -1077,31 +1065,31 @@ Register register = Register(() {
         color: node.s<Color>("color"),
         image: node.s<DecorationImage>("image"),
         border: node.s<BoxBorder>("border"),
-        borderRadius: node.s<BorderRadius>("borderRadius"),
+        borderRadius: node.s<BorderRadiusGeometry>("borderRadius"),
         boxShadow: node.array<BoxShadow>("boxShadow"),
         gradient: node.s<Gradient>("gradient"),
         backgroundBlendMode: node.s<BlendMode>("backgroundBlendMode"),
-        shape: node.s<BoxShape>("shape", BoxShape.rectangle));
+        shape: (node.s<BoxShape>("shape"))!);
   });
   XmlLayout.register("DecorationImage", (node, key) {
     return DecorationImage(
-        image: node.s<ImageProvider<Object>>("image"),
-        onError: node.s<void Function(Object, StackTrace)>("onError"),
+        image: (node.s<ImageProvider<Object>>("image"))!,
+        onError: node.s<void Function(Object, StackTrace?)>("onError"),
         colorFilter: node.s<ColorFilter>("colorFilter"),
         fit: node.s<BoxFit>("fit"),
-        alignment: node.s<AlignmentGeometry>("alignment", Alignment.center),
+        alignment: (node.s<AlignmentGeometry>("alignment"))!,
         centerSlice: node.s<Rect>("centerSlice"),
-        repeat: node.s<ImageRepeat>("repeat", ImageRepeat.noRepeat),
-        matchTextDirection: node.s<bool>("matchTextDirection", false),
-        scale: node.s<double>("scale", 1.0));
+        repeat: (node.s<ImageRepeat>("repeat"))!,
+        matchTextDirection: (node.s<bool>("matchTextDirection"))!,
+        scale: (node.s<double>("scale"))!);
   });
   XmlLayout.registerInline(ColorFilter, "mode", false, (node, method) {
     return ColorFilter.mode(
-        node.v<Color>(method[0]), node.v<BlendMode>(method[1]));
+        (node.v<Color>(method[0]))!, (node.v<BlendMode>(method[1]))!);
   });
   XmlLayout.register("ColorFilter.matrix", (node, key) {
     return ColorFilter.matrix(
-        node.s<List<double>>("arg:0") ?? node.child<List<double>>());
+        ((node.s<List<double>?>("arg:0") ?? node.child<List<double>>()))!);
   });
   XmlLayout.registerInline(ColorFilter, "linearToSrgbGamma", false,
       (node, method) {
@@ -1111,67 +1099,62 @@ Register register = Register(() {
       (node, method) {
     return ColorFilter.srgbToLinearGamma();
   });
-  XmlLayout.registerInline(BorderRadius, "all", false, (node, method) {
-    return BorderRadius.all(node.v<Radius>(method[0]));
-  });
-  XmlLayout.registerInline(BorderRadius, "circular", false, (node, method) {
-    return BorderRadius.circular(double.tryParse(method[0]));
-  });
-  XmlLayout.register("BorderRadius.vertical", (node, key) {
-    return BorderRadius.vertical(
-        top: node.s<Radius>("top", Radius.zero),
-        bottom: node.s<Radius>("bottom", Radius.zero));
-  });
-  XmlLayout.register("BorderRadius.horizontal", (node, key) {
-    return BorderRadius.horizontal(
-        left: node.s<Radius>("left", Radius.zero),
-        right: node.s<Radius>("right", Radius.zero));
-  });
-  XmlLayout.register("BorderRadius.only", (node, key) {
-    return BorderRadius.only(
-        topLeft: node.s<Radius>("topLeft", Radius.zero),
-        topRight: node.s<Radius>("topRight", Radius.zero),
-        bottomLeft: node.s<Radius>("bottomLeft", Radius.zero),
-        bottomRight: node.s<Radius>("bottomRight", Radius.zero));
-  });
-  XmlLayout.registerInline(BorderRadius, "zero", true, (node, method) {
-    return BorderRadius.zero;
-  });
-  XmlLayout.registerInline(Radius, "circular", false, (node, method) {
-    return Radius.circular(double.tryParse(method[0]));
-  });
-  XmlLayout.registerInline(Radius, "elliptical", false, (node, method) {
-    return Radius.elliptical(
-        double.tryParse(method[0]), double.tryParse(method[1]));
-  });
-  XmlLayout.registerInline(Radius, "zero", true, (node, method) {
-    return Radius.zero;
-  });
   XmlLayout.registerEnum(BoxShape.values);
   XmlLayout.register("BoxShadow", (node, key) {
     return BoxShadow(
-        color: node.s<Color>("color", const Color(0xFF000000)),
-        offset: node.s<Offset>("offset", Offset.zero),
-        blurRadius: node.s<double>("blurRadius", 0.0),
-        spreadRadius: node.s<double>("spreadRadius", 0.0));
+        color: (node.s<Color>("color", const Color(4278190080)))!,
+        offset: (node.s<Offset>("offset", Offset.zero))!,
+        blurRadius: (node.s<double>("blurRadius", 0.0))!,
+        spreadRadius: (node.s<double>("spreadRadius"))!);
   });
   XmlLayout.register("Row", (node, key) {
     return Row(
         key: key,
-        mainAxisAlignment: node.s<MainAxisAlignment>(
-            "mainAxisAlignment", MainAxisAlignment.start),
-        mainAxisSize: node.s<MainAxisSize>("mainAxisSize", MainAxisSize.max),
-        crossAxisAlignment: node.s<CrossAxisAlignment>(
-            "crossAxisAlignment", CrossAxisAlignment.center),
+        mainAxisAlignment: (node.s<MainAxisAlignment>(
+            "mainAxisAlignment", MainAxisAlignment.start))!,
+        mainAxisSize: (node.s<MainAxisSize>("mainAxisSize", MainAxisSize.max))!,
+        crossAxisAlignment: (node.s<CrossAxisAlignment>(
+            "crossAxisAlignment", CrossAxisAlignment.center))!,
         textDirection: node.s<TextDirection>("textDirection"),
-        verticalDirection: node.s<VerticalDirection>(
-            "verticalDirection", VerticalDirection.down),
+        verticalDirection: (node.s<VerticalDirection>(
+            "verticalDirection", VerticalDirection.down))!,
         textBaseline: node.s<TextBaseline>("textBaseline"),
         children: node.children<Widget>());
   });
+  XmlLayout.registerInline(EdgeInsets, "fromLTRB", false, (node, method) {
+    return EdgeInsets.fromLTRB(method[0].toDouble(), method[1].toDouble(),
+        method[2].toDouble(), method[3].toDouble());
+  });
+  XmlLayout.registerInline(EdgeInsets, "all", false, (node, method) {
+    return EdgeInsets.all(method[0].toDouble());
+  });
+  XmlLayout.register("EdgeInsets.only", (node, key) {
+    return EdgeInsets.only(
+        left: (node.s<double>("left"))!,
+        top: (node.s<double>("top"))!,
+        right: (node.s<double>("right"))!,
+        bottom: (node.s<double>("bottom"))!);
+  });
+  XmlLayout.register("EdgeInsets.symmetric", (node, key) {
+    return EdgeInsets.symmetric(
+        vertical: (node.s<double>("vertical", 0.0))!,
+        horizontal: (node.s<double>("horizontal", 0.0))!);
+  });
+  XmlLayout.register("EdgeInsets.fromWindowPadding", (node, key) {
+    return EdgeInsets.fromWindowPadding(
+        (node.s<WindowPadding>("arg:0"))!, (node.s<double>("arg:1"))!);
+  });
+  XmlLayout.registerInline(EdgeInsets, "zero", true, (node, method) {
+    return EdgeInsets.zero;
+  });
+  XmlLayout.registerInline(WindowPadding, "zero", true, (node, method) {
+    return WindowPadding.zero;
+  });
   XmlLayout.register("Expanded", (node, key) {
     return Expanded(
-        key: key, flex: node.s<int>("flex", 1), child: node.child<Widget>());
+        key: key,
+        flex: (node.s<int>("flex", 1))!,
+        child: (node.child<Widget>())!);
   });
   XmlLayout.register("TextSpan", (node, key) {
     return TextSpan(
@@ -1179,15 +1162,53 @@ Register register = Register(() {
         children: node.children<InlineSpan>(),
         style: node.s<TextStyle>("style"),
         recognizer: node.s<GestureRecognizer>("recognizer"),
+        mouseCursor: node.s<MouseCursor>("mouseCursor"),
+        onEnter: node.s<void Function(PointerEnterEvent)>("onEnter"),
+        onExit: node.s<void Function(PointerExitEvent)>("onExit"),
         semanticsLabel: node.s<String>("semanticsLabel"));
   });
   XmlLayout.register("WidgetSpan", (node, key) {
     return WidgetSpan(
-        child: node.child<Widget>(),
-        alignment: node.s<PlaceholderAlignment>(
-            "alignment", PlaceholderAlignment.bottom),
+        child: (node.child<Widget>())!,
+        alignment: (node.s<PlaceholderAlignment>(
+            "alignment", PlaceholderAlignment.bottom))!,
         baseline: node.s<TextBaseline>("baseline"),
         style: node.s<TextStyle>("style"));
   });
   XmlLayout.registerEnum(PlaceholderAlignment.values);
+  XmlLayout.registerInline(BorderRadius, "all", false, (node, method) {
+    return BorderRadius.all((node.v<Radius>(method[0]))!);
+  });
+  XmlLayout.registerInline(BorderRadius, "circular", false, (node, method) {
+    return BorderRadius.circular(method[0].toDouble());
+  });
+  XmlLayout.register("BorderRadius.vertical", (node, key) {
+    return BorderRadius.vertical(
+        top: (node.s<Radius>("top", Radius.zero))!,
+        bottom: (node.s<Radius>("bottom", Radius.zero))!);
+  });
+  XmlLayout.register("BorderRadius.horizontal", (node, key) {
+    return BorderRadius.horizontal(
+        left: (node.s<Radius>("left", Radius.zero))!,
+        right: (node.s<Radius>("right", Radius.zero))!);
+  });
+  XmlLayout.register("BorderRadius.only", (node, key) {
+    return BorderRadius.only(
+        topLeft: (node.s<Radius>("topLeft"))!,
+        topRight: (node.s<Radius>("topRight"))!,
+        bottomLeft: (node.s<Radius>("bottomLeft"))!,
+        bottomRight: (node.s<Radius>("bottomRight"))!);
+  });
+  XmlLayout.registerInline(BorderRadius, "zero", true, (node, method) {
+    return BorderRadius.zero;
+  });
+  XmlLayout.registerInline(Radius, "circular", false, (node, method) {
+    return Radius.circular(method[0].toDouble());
+  });
+  XmlLayout.registerInline(Radius, "elliptical", false, (node, method) {
+    return Radius.elliptical(method[0].toDouble(), method[1].toDouble());
+  });
+  XmlLayout.registerInline(Radius, "zero", true, (node, method) {
+    return Radius.zero;
+  });
 });

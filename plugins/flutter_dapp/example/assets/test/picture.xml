@@ -1,0 +1,12 @@
+<scaffold>
+    <attr:appbar>
+        <appbar>
+            <attr:title>
+                <text>Picture</text>
+            </attr:title>
+        </appbar>
+    </attr:appbar>
+    <attr:body>
+        <img src="${src}"/>
+    </attr:body>
+</scaffold>

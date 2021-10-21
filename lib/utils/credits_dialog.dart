@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 import '../localizations/localizations.dart';
 
-Future<bool> showCreditsDialog(BuildContext context) async {
+Future<bool?> showCreditsDialog(BuildContext context) async {
   var kt = lc(context);
   // String credits = kt("credits_content");
   // RegExp exp = RegExp(r"https?:\/\/[^ \n]+");

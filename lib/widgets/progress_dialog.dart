@@ -9,23 +9,23 @@ import '../localizations/localizations.dart';
 abstract class ProgressItem {
   String defaultText = "";
   bool cancelable = true;
-  void Function(String) onProgress;
-  void Function() onComplete;
-  void Function(String) onFail;
+  void Function(String)? onProgress;
+  void Function()? onComplete;
+  void Function(String)? onFail;
 
   void cancel();
   void progress(String text) {
-    if (onProgress != null) onProgress(text);
+    if (onProgress != null) onProgress?.call(text);
     else print("Warring onProgress is null");
   }
 
   void complete() {
-    if (onComplete != null) onComplete();
+    if (onComplete != null) onComplete?.call();
     else print("Warring onComplete is null");
   }
 
   void fail(String msg) {
-    if (onFail != null) onFail(msg);
+    if (onFail != null) onFail?.call(msg);
     else print("Warring onFail is null");
   }
 
@@ -35,12 +35,12 @@ abstract class ProgressItem {
 }
 
 class ProgressDialog extends StatefulWidget {
-  String title;
+  final String title;
   ProgressItem item;
 
   ProgressDialog({
-    this.title,
-    this.item
+    this.title = "",
+    required this.item,
   });
 
   @override
@@ -62,8 +62,8 @@ enum ProgressResult {
 }
 
 class _ProgressDialogState extends State<ProgressDialog> {
-  String processText;
-  _Status status;
+  late String processText;
+  late _Status status;
 
   _ProgressDialogState(ProgressItem item) {
     processText = item.defaultText;
@@ -133,13 +133,11 @@ class _ProgressDialogState extends State<ProgressDialog> {
             child: Text(kt("retry")),
           );
         }
-        break;
       }
       case _Status.Done: {
         return Container();
       }
     }
-    return null;
   }
 
   Widget makeIcon() {
@@ -166,12 +164,11 @@ class _ProgressDialogState extends State<ProgressDialog> {
         );
       }
     }
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    double c_width = MediaQuery.of(context).size.width*0.6;
+    double width = MediaQuery.of(context).size.width*0.6;
     return WillPopScope(
         child: Dialog(
             child: Padding(
@@ -197,7 +194,7 @@ class _ProgressDialogState extends State<ProgressDialog> {
                       ),
                       Container(
                         padding: EdgeInsets.only(left: 8),
-                        width: min(c_width, 260),
+                        width: min(width, 260),
                         child: Text(
                           processText,
                           softWrap: true,

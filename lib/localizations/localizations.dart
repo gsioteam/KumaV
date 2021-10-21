@@ -1,10 +1,9 @@
 
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'zh_hans.dart' as zhHans;
-import 'zh_hant.dart' as zhHant;
-import 'en.dart' as en;
+import 'package:yaml/yaml.dart';
 
 class LocaleChangedNotification extends Notification {
   Locale locale;
@@ -39,20 +38,20 @@ class KumaLocalizationsDelegate extends LocalizationsDelegate<KumaLocalizations>
   }
 
   @override
-  Future<KumaLocalizations> load(Locale locale) {
+  Future<KumaLocalizations> load(Locale locale) async {
     switch (locale.languageCode) {
       case 'zh': {
         if (locale.scriptCode == 'Hans') {
-          return get(zhHans.words);
+          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hans.yaml')));
         } else if (locale.scriptCode == 'Hant') {
-          return get(zhHant.words);
+          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hant.yaml')));
         } else {
-          return get(zhHant.words);
+          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hant.yaml')));
         }
         break;
       }
       default: {
-        return get(en.words);
+        return get(loadYaml(await rootBundle.loadString('res/languages/en.yaml')));
       }
     }
   }
@@ -66,18 +65,18 @@ class KumaLocalizationsDelegate extends LocalizationsDelegate<KumaLocalizations>
 }
 
 String Function(String) lc(BuildContext ctx) {
-  KumaLocalizations loc = Localizations.of<KumaLocalizations>(ctx, KumaLocalizations);
-  return (String key)=>loc.get(key);
+  KumaLocalizations? loc = Localizations.of<KumaLocalizations>(ctx, KumaLocalizations);
+  return (String key)=>loc?.get(key) ?? key;
 }
 
 extension KinokoLocalizationsWidget on Widget {
   String kt(BuildContext context, String key) {
-    return Localizations.of<KumaLocalizations>(context, KumaLocalizations).get(key);
+    return Localizations.of<KumaLocalizations>(context, KumaLocalizations)?.get(key) ?? key;
   }
 }
 
 extension KinokoLocalizationsState on State {
   String kt(String key) {
-    return Localizations.of<KumaLocalizations>(this.context, KumaLocalizations).get(key);
+    return Localizations.of<KumaLocalizations>(this.context, KumaLocalizations)?.get(key) ?? key;
   }
 }
