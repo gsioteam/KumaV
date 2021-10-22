@@ -8,7 +8,11 @@ enum _VideoSheetStatus {
   Fullscreen,
 }
 
-typedef VideoContentBuilder = Widget Function(BuildContext context, ScrollPhysics physics, double height);
+class VideoSheetNotification extends Notification {}
+class VideoSheetOpenNotification extends VideoSheetNotification{}
+class VideoSheetCloseNotification extends VideoSheetNotification{}
+
+typedef VideoContentBuilder = Widget Function(BuildContext context, ScrollPhysics physics, ValueNotifier<RectValue> controller);
 
 class _VideoSheetScrollPhysics extends ScrollPhysics {
   final VideoSheetState state;
@@ -65,30 +69,87 @@ class VideoSheet extends StatefulWidget {
 
 const double _Gap = 10;
 
+class RectValue {
+  double left;
+  double right;
+  double top;
+  double bottom;
+  double barSize;
+
+  RectValue({
+    this.left = 0,
+    this.right = 0,
+    this.top = 0,
+    this.bottom = 0,
+    required this.barSize,
+  });
+}
+
 class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMixin {
   late _VideoSheetScrollPhysics scrollPhysics;
   late double top;
   late AnimationController animation;
   double from = 0;
   double to = 0;
+  late ValueNotifier<RectValue> rectController;
 
   _VideoSheetStatus status = _VideoSheetStatus.Closed;
+  Widget? child;
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
+    var rect = this.rect;
+    rectController.value = rect;
+    if (child == null) {
+      child = widget.builder(context, scrollPhysics, rectController);
+    }
     return Positioned(
-      left: _gap,
-      right: _gap,
-      bottom: _bottom,
-      top: top,
+      left: rect.left,
+      right: rect.right,
+      bottom: rect.bottom,
+      top: rect.top,
       child: Opacity(
         opacity: _opacity,
         child: Material(
           color: Colors.white,
           elevation: 2,
-          child: status == _VideoSheetStatus.Closed ? null : widget.builder(context, scrollPhysics, top),
+          clipBehavior: Clip.hardEdge,
+          child: status == _VideoSheetStatus.Closed ? null : OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: 0,
+            minHeight: 0,
+            maxWidth: size.width,
+            maxHeight: size.height,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: NotificationListener<VideoSheetNotification>(
+                child: child!,
+                onNotification: (notification) {
+                  if (notification is VideoSheetOpenNotification) {
+                    open();
+                  } else if (notification is VideoSheetCloseNotification) {
+                    close();
+                  }
+                  return true;
+                },
+              ),
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  RectValue get rect {
+    var gap = _gap;
+    return RectValue(
+      left: gap,
+      right: gap,
+      top: top,
+      bottom: _bottom,
+      barSize: widget.barSize,
     );
   }
 
@@ -124,6 +185,8 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     scrollPhysics = _VideoSheetScrollPhysics(this);
     from = to = top = widget.maxHeight;
 
+    rectController = ValueNotifier(rect);
+
     animation = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
@@ -135,6 +198,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
   void dispose() {
     animation.dispose();
     super.dispose();
+    rectController.dispose();
   }
 
   void _update() {
@@ -231,7 +295,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     return true;
   }
 
-  void show() {
+  void open() {
     from = top;
     to = 0;
     setState(() {
@@ -240,5 +304,24 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     animation.forward(from: 0).then((value) {
       from = to = top;
     });
+  }
+
+  void close() {
+    from = top;
+    to = widget.maxHeight;
+    animation.forward(from: 0).then((value) {
+      from = to = top;
+      setState(() {
+        status = _VideoSheetStatus.Closed;
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.builder != widget.builder) {
+      child = null;
+    }
   }
 }

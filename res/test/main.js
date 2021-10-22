@@ -4,30 +4,37 @@ class MainController extends Controller {
     load(data) {
         this.id = data.id;
         this.url = data.url;
+
+        var cache = this.readCache();
+        let list;
+        if (cache) {
+            list = this.parseHtml(cache.html);
+        } else {
+            list = [];
+        }
+
         this.data = {
-            list: [],
+            list: list,
             loading: false,
         };
+
+        if (cache) {
+            let now = new Date().getTime();
+            if (now - cache.time > 30 * 60 * 1000) {
+                this.reload();
+            }
+        } else {
+            this.reload();
+        }
     }
 
     async onPressed(index) {
         var data = this.data.list[index];
-        await this.navigateTo('picture', {
-            data: {
-                src: data.img
-            }
-        });
+        openVideo(data);
     }
 
     onRefresh() {
-        this.setState(() => {
-            this.data.loading = true;
-        });
-        setTimeout(() => {
-            this.setState(() => {
-                this.data.loading = false;
-            });
-        }, 5000);
+        this.reload();
     }
 
     onLoadMore() {
@@ -42,39 +49,87 @@ class MainController extends Controller {
     }
 
     async reload() {
-        localStorage['']
+        this.setState(() => {
+            this.data.loading = true;
+        });
+        try {
+            let res = await fetch(this.url);
+            let html = await res.text();
+            let items = this.parseHtml(html);
+            localStorage['cache_' + this.id] = JSON.stringify({
+                time: new Date().getTime(),
+                html: html,
+            });
+            this.setState(()=>{
+                this.data.list = items;
+                this.data.loading = false;
+            });
+        } catch (e) {
+            this.setState(()=>{
+                this.data.loading = false;
+            });
+        }
     }
 
-    async fetch(url) {
-        let res = await fetch(url);
-        let doc = HTMLParser.parse(await res.text());
+    readCache() {
+        let cache = localStorage['cache_' + this.id];
+        if (cache) {
+            let json = JSON.parse(cache);
+            return json;
+        }
+    }
 
-        let titles = doc.querySelectorAll('.latest-tab-nav > ul > li');
-        let cols = doc.querySelectorAll('.latest-tab-box .latest-item');
-
-        let items = [];
-        for (let i = 0; i < len; ++i) {
-            let telem = titles[i];
-            let item = glib.DataItem.new();
-            item.type = glib.DataItem.Type.Header;
-            item.title = telem.text;
-            items.push(item);
-
-            let celem = cols[i];
-            let list = celem.querySelectorAll('.img-list > li');
-            for (let node of list) {
-                let link = node.querySelector('a.play-img');
-                let img = link.querySelector('img');
+    parseHtml(html, url) {
+        let doc = HTMLParser.parse(html);
+        
+        if (this.id == 'home') {
+            let titles = doc.querySelectorAll('.latest-tab-nav > ul > li');
+            let cols = doc.querySelectorAll('.latest-tab-box .latest-item');
+            let len = titles.length;
+    
+            let items = [];
+            for (let i = 0; i < len; ++i) {
+                let telem = titles[i];
                 let item = {
-                    title: link.attr('title'),
-                    link: new URL(link.attr('href'), url).toString(),
-                    picture: img.attr('src'),
-                    subtitle: node.querySelector('.time').text,
+                    header: true,
+                    title: telem.text,
+                };
+                items.push(item);
+    
+                let celem = cols[i];
+                let list = celem.querySelectorAll('.img-list > li');
+                for (let node of list) {
+                    let link = node.querySelector('a.play-img');
+                    let img = link.querySelector('img');
+                    let item = {
+                        title: link.getAttribute('title'),
+                        link: new URL(link.getAttribute('href'), url).toString(),
+                        picture: img.getAttribute('src'),
+                        subtitle: node.querySelector('.time').text,
+                    };
+                    items.push(item);
+                }
+            }
+            return items;
+        } else {
+            let elems = doc.querySelectorAll('.img-list > li > a');
+    
+            let items = [];
+    
+            for (let i = 0, t = elems.length; i < t; ++i) {
+                let elem = elems[i];
+                let img = elem.querySelector('img');
+    
+                let item = {
+                    title: elem.getAttribute('title'),
+                    link: new URL(elem.getAttribute('href'), url).toString(),
+                    picture: new URL(img.getAttribute('src'), url).toString(),
+                    subtitle: elem.querySelector('p').text.trim(),
                 };
                 items.push(item);
             }
+            return items;
         }
-        return items;
     }
 }
 

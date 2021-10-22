@@ -17,19 +17,21 @@ let functions = {
     }
 };
 
-globalThis.localStorage = new Proxy(globalThis._storage, {
+globalThis.localStorage = new Proxy({}, {
     get(target, prop, receiver) {
         let func = functions[prop];
         if (typeof func == 'function') {
             return func;
         }
-        return target.get(prop);
+        return globalThis._storage.get(prop);
     },
     set(target, prop, value) {
         let func = functions[prop];
         if (typeof func == 'function') {
-            return func(target, prop, value);
+            func(globalThis._storage, prop, value);
+        } else {
+            globalThis._storage.set(prop, value.toString());
         }
-        return target.set(prop, value.toString());
+        return true;
     },
 });

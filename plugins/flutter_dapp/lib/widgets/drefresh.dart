@@ -77,6 +77,11 @@ class _DRefreshState extends State<DRefresh> with TickerProviderStateMixin {
       value: -_IndicatorSize - 10,
       duration: Duration(milliseconds: 300),
     );
+
+    print("init ${widget.loading}");
+    if (widget.loading) {
+      Future.delayed(Duration(milliseconds: 30)).then((value) => refreshController.forward());
+    }
   }
 
   @override
@@ -143,6 +148,7 @@ class _DRefreshState extends State<DRefresh> with TickerProviderStateMixin {
   void didUpdateWidget(covariant DRefresh oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.loading != oldWidget.loading) {
+      print("update ${widget.loading}");
       if (!widget.loading) {
         waitForRefresh = false;
         _dismiss = true;

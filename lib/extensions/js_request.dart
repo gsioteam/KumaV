@@ -12,7 +12,7 @@ class JsRequest {
   String? password;
   CancelToken? cancelToken;
   JsValue? _onState;
-  int? timeout;
+  int? timeout = 30000;
   int status = 0;
   String responseText = '';
 

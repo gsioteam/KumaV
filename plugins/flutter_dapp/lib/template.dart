@@ -167,7 +167,7 @@ Register register = Register(() {
       systemOverlayStyle: node.s<SystemUiOverlayStyle>("systemOverlayStyle"));
   });
   XmlLayout.registerEnum(DragStartBehavior.values);
-  XmlLayout.register("ListView", (node, key) {
+  XmlLayout.register("list-view", (node, key) {
     String? item = node.s<String>('item');
     if (item != null) {
       var data = DWidget.of(node.context)!;
@@ -194,13 +194,15 @@ Register register = Register(() {
       );
     }
   });
-  XmlLayout.register("ListTile", (node, key) {
+  XmlLayout.register("list-item", (node, key) {
     return ListTile(
       leading: node.s<Widget>("leading"),
       title: node.s<Widget>("title"),
       subtitle: node.s<Widget>("subtitle"),
       trailing: node.s<Widget>("trailing"),
       onTap: node.s<VoidCallback>("onTap"),
+      dense: node.s<bool>("dense",),
+      contentPadding: node.s<EdgeInsets>("padding"),
     );
   });
   var imgBuilder = (node, key) {
@@ -275,7 +277,7 @@ Register register = Register(() {
       child: Scaffold(
         appBar: TabContainer(
           tabs: tabs,
-          isScrollable: node.s<bool>("isScrollable", false)!,
+          isScrollable: node.s<bool>("scrollable", false)!,
           elevation: node.s<double>("elevation", 0)!,
         ),
         body: TabBarView(
@@ -293,5 +295,11 @@ Register register = Register(() {
   });
   XmlLayout.register('item', (node, key) {
     return NodeItem(node);
+  });
+  XmlLayout.registerInlineMethod("isNull", (method, status) {
+    return method[0] == null;
+  });
+  XmlLayout.registerInlineMethod("isNotNull", (method, status) {
+    return method[0] != null;
   });
 });

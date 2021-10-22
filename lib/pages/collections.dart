@@ -6,6 +6,7 @@ import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:kumav/extensions/js_request.dart';
 import 'package:kumav/extensions/js_storage.dart';
 import 'package:kumav/pages/plugins.dart';
+import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/configs.dart';
 import 'package:kumav/utils/image_providers.dart';
 import 'package:kumav/utils/plugin.dart';
@@ -97,6 +98,11 @@ class _CollectionsState extends State<Collections> {
           Storage storage = Storage(widget.plugin!);
           JsValue jsStorage = script.bind(storage, classInfo: storageClass);
           script.global['_storage'] = jsStorage;
+
+          JsValue func = script.function((argv) {
+            OpenVideoNotification(null).dispatch(context);
+          });
+          script.global['openVideo'] = func;
 
           script.eval(Configs.instance.bundleJS);
         },

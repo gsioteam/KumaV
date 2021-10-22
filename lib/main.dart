@@ -2,6 +2,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kumav/utils/assets_filesystem.dart';
 
@@ -16,6 +17,7 @@ import 'package:xml_layout/xml_layout.dart';
 import 'pages/index.dart';
 import 'utils/configs.dart';
 import 'utils/plugin.dart';
+import 'utils/video_downloader/proxy_server.dart';
 
 bool _isTest = true;
 
@@ -55,6 +57,9 @@ class MainAppState extends State<MainApp> {
             selectedItemColor: Colors.blue,
             unselectedItemColor: Colors.black54,
             type: BottomNavigationBarType.fixed,
+          ),
+          appBarTheme: AppBarTheme(
+            brightness: Brightness.dark
           ),
         ),
         home: SplashScreen(),
@@ -122,6 +127,7 @@ class SplashScreenState extends State<SplashScreen> {
     await showDisclaimer(context);
     await Plugin.setup();
     await Configs.instance.setup(context);
+    await ProxyServer.instance.ready();
 
     if (_isTest) {
       Plugin plugin = Plugin.test(context);

@@ -1,6 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/configs.dart';
 import 'package:kumav/widgets/video_sheet.dart';
@@ -36,6 +37,7 @@ class _IndexState extends State<Index> {
   HomePages selected = HomePages.Home;
   void Function()? onRefresh;
   void Function()? onFetch;
+  GlobalKey<VideoSheetState> _videoKey = GlobalKey();
 
   bool hasMainProject() {
     // return Project.getMainProject() != null;
@@ -79,7 +81,13 @@ class _IndexState extends State<Index> {
                   if (settings.name == _initPage) {
                     return MaterialPageRoute(builder: (context) {
                       return Scaffold(
-                        body: _buildBody(),
+                        body: NotificationListener<OpenVideoNotification>(
+                          child: _buildBody(),
+                          onNotification: (notification) {
+                            _videoKey.currentState?.open();
+                            return true;
+                          },
+                        ),
                         bottomNavigationBar: BottomNavigationBar(
                           items: [
                             BottomNavigationBarItem(
@@ -118,9 +126,13 @@ class _IndexState extends State<Index> {
               ),
             ),
             VideoSheet(
+                key: _videoKey,
                 maxHeight: size.height,
-                builder: (context, physics, height) {
-                  return Video(physics: physics);
+                builder: (context, physics, controller) {
+                  return Video(
+                    physics: physics,
+                    controller: controller,
+                  );
                 }
             ),
           ],
@@ -129,6 +141,7 @@ class _IndexState extends State<Index> {
           return true;
         }
     );
+
   }
 
   @override
