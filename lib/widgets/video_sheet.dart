@@ -16,6 +16,7 @@ enum _VideoSheetStatus {
 class VideoSheetNotification extends Notification {}
 class VideoSheetOpenNotification extends VideoSheetNotification{}
 class VideoSheetCloseNotification extends VideoSheetNotification{}
+class VideoSheetMinifyNotification extends VideoSheetNotification{}
 
 typedef VideoContentBuilder = Widget Function(BuildContext context, ScrollPhysics physics, ValueNotifier<RectValue> controller);
 
@@ -158,6 +159,8 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
                     open();
                   } else if (notification is VideoSheetCloseNotification) {
                     close();
+                  } else if (notification is VideoSheetMinifyNotification) {
+                    minify();
                   }
                   return true;
                 },
@@ -349,6 +352,18 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
         status = _VideoSheetStatus.Closed;
         _videoInfo = null;
       });
+    });
+  }
+
+  void minify() {
+    double topHeight = widget.maxHeight - widget.barSize - widget.bottomHeight;
+    from = top;
+    to = topHeight;
+    setState(() {
+      status = _VideoSheetStatus.Mini;
+    });
+    animation.forward(from: 0).then((value) {
+      from = to = top;
     });
   }
 

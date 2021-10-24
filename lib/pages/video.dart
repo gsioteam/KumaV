@@ -107,6 +107,8 @@ class _VideoState extends State<Video> {
                       item: _currentItem,
                       processor: _jsProcessor,
                       controller: widget.controller,
+                      title: _processor.value.title,
+                      subtitle: _processor.value.subtitle,
                     ),
                   ),
                   size: 270,

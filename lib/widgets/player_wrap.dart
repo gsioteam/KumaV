@@ -27,12 +27,16 @@ class PlayerWrap extends StatefulWidget {
   final JsValue? processor;
   final ProcessorItem? item;
   final ValueNotifier<RectValue> controller;
+  final String title;
+  final String subtitle;
 
   PlayerWrap({
     Key? key,
     this.item,
     this.processor,
     required this.controller,
+    required this.title,
+    required this.subtitle,
   }) : super(key: key);
 
   @override
@@ -65,6 +69,8 @@ class _PlayerWrapState extends State<PlayerWrap> {
           });
         }
       },
+      title: widget.title,
+      subtitle: widget.item?.title ?? widget.subtitle,
     );
   }
 
@@ -108,6 +114,7 @@ class _PlayerWrapState extends State<PlayerWrap> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.item != widget.item) {
       clearResolutions();
+      _current = null;
       getVideo();
     }
   }

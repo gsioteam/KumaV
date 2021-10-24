@@ -40,22 +40,20 @@ class _VideoInner extends StatefulWidget {
 }
 
 class _VideoInnerState extends State<_VideoInner> {
-  late Size size;
 
   @override
   Widget build(BuildContext context) {
-    bool hasSize = size != Size.zero;
     return GestureDetector(
       child: Material(
         color: Colors.black,
         child: FittedBox(
           fit: widget.fit,
           child: SizedBox(
-            width: hasSize ? size.width : 320,
-            height: hasSize ? size.height : 180,
+            width: 320,
+            height: 180,
             child: widget.controller == null ? null : VlcPlayer(
               controller: widget.controller!,
-              aspectRatio: hasSize ? size.width / size.height : 16 / 9,
+              aspectRatio: 16 / 9,
             ),
           ),
         ),
@@ -64,50 +62,17 @@ class _VideoInnerState extends State<_VideoInner> {
     );
   }
 
-  void _touch() {
-    if (widget.controller != null) {
-      var value = widget.controller!.value;
-      size = value.size;
-      widget.controller!.addListener(_update);
-    } else {
-      size = Size.zero;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
 
-    _touch();
   }
 
   @override
   void dispose() {
     super.dispose();
-    widget.controller?.removeListener(_update);
   }
 
-  @override
-  void didUpdateWidget(covariant _VideoInner oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?.removeListener(_update);
-      if (widget.controller != null) {
-        var value = widget.controller!.value;
-        size = value.size;
-        widget.controller!.addListener(_update);
-      }
-    }
-  }
-
-  void _update() {
-    var newSize = widget.controller!.value.size;
-    if (size != newSize) {
-      setState(() {
-        size = newSize;
-      });
-    }
-  }
 }
 
 class VideoPlayer extends StatefulWidget {
@@ -117,6 +82,8 @@ class VideoPlayer extends StatefulWidget {
   final List<VideoResolution> resolutions;
   final void Function(int index)? onSelectResolution;
   final int currentSelect;
+  final String title;
+  final String subtitle;
 
   VideoPlayer({
     Key? key,
@@ -125,6 +92,8 @@ class VideoPlayer extends StatefulWidget {
     this.resolutions = const [],
     this.onSelectResolution,
     this.currentSelect = 0,
+    required this.title,
+    required this.subtitle,
   }) : super(key: key);
 
   @override
@@ -137,7 +106,6 @@ class _VideoPlayerState extends State<VideoPlayer> {
 
   VlcPlayerController? controller;
   ProxyItem? proxyItem;
-  double aspectRatio = 16 / 9;
 
   @override
   Widget build(BuildContext context) {
@@ -186,9 +154,28 @@ class _VideoPlayerState extends State<VideoPlayer> {
                                       width: double.infinity,
                                       height: double.infinity,
                                       padding: EdgeInsets.only(left: 8),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text("hello"),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            widget.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Padding(padding: EdgeInsets.only(
+                                            top: 2
+                                          )),
+                                          Text(
+                                            widget.subtitle,
+                                            style: TextStyle(
+                                              color: Theme.of(context).disabledColor
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     onTap: () {
@@ -261,9 +248,12 @@ class _VideoPlayerState extends State<VideoPlayer> {
             ValueListenableBuilder<RectValue>(
               valueListenable: widget.controller,
               builder: (context, value, child) {
-                return Visibility(
-                    visible: value.top < padding.top,
-                    child: child!
+                return IgnorePointer(
+                  ignoring: value.top > padding.top,
+                  child: Opacity(
+                      opacity: math.min(1, math.max(0, (1 - value.top / padding.top))),
+                      child: child!
+                  )
                 );
               },
               child: Padding(
@@ -285,6 +275,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
     );
   }
 
+  bool _waitForPlaying = false;
   @override
   void initState() {
     super.initState();
@@ -293,8 +284,11 @@ class _VideoPlayerState extends State<VideoPlayer> {
     if (dataSource != null) {
       proxyItem = ProxyServer.instance.get(dataSource.src, headers: dataSource.headers);
       proxyItem!.retain();
-      controller = VlcPlayerController.network(proxyItem!.localServerUri.toString());
+      controller = VlcPlayerController.network(
+        proxyItem!.localServerUri.toString(),
+      );
       controller!.addListener(_update);
+      _waitForPlaying = true;
     }
   }
 
@@ -306,15 +300,10 @@ class _VideoPlayerState extends State<VideoPlayer> {
   }
 
   void _update() {
-    var size = controller!.value.size;
-    if (size != Size.zero) {
-      double ratio = size.width / size.height;
-      if (aspectRatio != ratio) {
-        setState(() {
-          aspectRatio = ratio;
-        });
-      }
-    }
+//    if (controller!.value.isInitialized && _waitForPlay) {
+//      controller!.play();
+//      _waitForPlay = false;
+//    }
   }
 
 }

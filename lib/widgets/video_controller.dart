@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
+import 'package:kumav/widgets/video_sheet.dart';
 
 import 'video_player.dart';
 
@@ -144,6 +145,44 @@ class VideoControllerState extends State<VideoController> {
                         ],
                       ),
                     ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          IconButton(
+                              onPressed: () {
+                                VideoSheetMinifyNotification().dispatch(context);
+                              },
+                              icon: Icon(Icons.keyboard_arrow_down)
+                          ),
+                          Expanded(child: Container()),
+                          if (widget.resolutions.length > 1) _buildResolutionButton(context),
+                          PopupMenuButton(
+                            itemBuilder: (context) {
+                              return [
+                                PopupMenuItem<int>(
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.only(right: 10),
+                                        child: Icon(Icons.refresh, color: Colors.black54,),
+                                      ),
+                                      Text("reload"),
+                                    ],
+                                  ),
+                                  value: 0,
+                                ),
+                              ];
+                            },
+                            onSelected: (index) {
+
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                     if (widget.controller != null) Positioned(
                       bottom: 4,
                       left: 8,
@@ -229,38 +268,6 @@ class VideoControllerState extends State<VideoController> {
                     ),
                   );
                 }
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Row(
-                children: [
-                  Expanded(child: Container()),
-                  if (widget.resolutions.length > 1) _buildResolutionButton(context),
-                  PopupMenuButton(
-                    itemBuilder: (context) {
-                      return [
-                        PopupMenuItem<int>(
-                          child: Row(
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(right: 10),
-                                child: Icon(Icons.refresh, color: Colors.black54,),
-                              ),
-                              Text("reload"),
-                            ],
-                          ),
-                          value: 0,
-                        ),
-                      ];
-                    },
-                    onSelected: (index) {
-
-                    },
-                  ),
-                ],
-              ),
             ),
           ],
         ),
