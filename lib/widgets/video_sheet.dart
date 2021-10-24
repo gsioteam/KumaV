@@ -2,6 +2,11 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import 'package:flutter_dapp/flutter_dapp.dart';
+import 'package:kumav/utils/plugin.dart';
+
+import 'value_widget.dart';
+
 enum _VideoSheetStatus {
   Closed,
   Mini,
@@ -85,6 +90,18 @@ class RectValue {
   });
 }
 
+class VideoInfo {
+  String key;
+  dynamic data;
+  Plugin plugin;
+
+  VideoInfo({
+    required this.key,
+    required this.data,
+    required this.plugin,
+  });
+}
+
 class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMixin {
   late _VideoSheetScrollPhysics scrollPhysics;
   late double top;
@@ -96,6 +113,8 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
   _VideoSheetStatus status = _VideoSheetStatus.Closed;
   Widget? child;
 
+  VideoInfo? _videoInfo;
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -104,6 +123,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     if (child == null) {
       child = widget.builder(context, scrollPhysics, rectController);
     }
+
     return Positioned(
       left: rect.left,
       right: rect.right,
@@ -125,7 +145,14 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
               width: size.width,
               height: size.height,
               child: NotificationListener<VideoSheetNotification>(
-                child: child!,
+                child: Visibility(
+                  key: ValueKey(_videoInfo?.key),
+                  visible: _videoInfo?.key != null,
+                  child: ValueWidget<VideoInfo>(
+                    value: _videoInfo,
+                    child: child!,
+                  ),
+                ),
                 onNotification: (notification) {
                   if (notification is VideoSheetOpenNotification) {
                     open();
@@ -306,6 +333,13 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     });
   }
 
+  void play(VideoInfo videoInfo) {
+    setState(() {
+      _videoInfo = videoInfo;
+    });
+    open();
+  }
+
   void close() {
     from = top;
     to = widget.maxHeight;
@@ -313,6 +347,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
       from = to = top;
       setState(() {
         status = _VideoSheetStatus.Closed;
+        _videoInfo = null;
       });
     });
   }

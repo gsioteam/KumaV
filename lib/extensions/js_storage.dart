@@ -31,7 +31,7 @@ class Storage {
 }
 
 ClassInfo storageClass = ClassInfo<Storage>(
-  newInstance: (_, __) => throw Exception(["This is a abstract class"]),
+  newInstance: (_, __) => throw Exception("This is a abstract class"),
   functions: {
     "set": JsFunction.ins((obj, argv) => obj.set(argv[0], argv[1])),
     "get": JsFunction.ins((obj, argv) => obj.get(argv[0])),

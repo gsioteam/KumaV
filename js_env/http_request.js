@@ -79,6 +79,7 @@ class XMLHttpRequest extends EventTarget {
                     loaded: arguments[1],
                     total: arguments[2],
                 });
+                break;
             }
             case 'headers': {
                 this._readyState = XMLHttpRequest.HEADERS_RECEIVED;
@@ -90,13 +91,16 @@ class XMLHttpRequest extends EventTarget {
                 this._readyState = XMLHttpRequest.DONE;
                 this.dispatchEvent(new Event('readystatechange'));
                 event = new Event(type);
+                break;
             }
             case 'error': {
                 event = new Event(type);
                 event.error = arguments[1];
+                break;
             }
             default: {
                 event = new Event(type);
+                break;
             }
         }
         this.dispatchEvent(event);

@@ -67,7 +67,7 @@ class LoadItem {
       List<int> buf = utf8.encode(json);
       yield buf;
       onLoadData?.call(buf.length);
-      _onComplete([buf]);
+      _onComplete(true, [buf]);
       currentRequest = null;
     } else {
       item.onComplete = _onComplete;
@@ -91,8 +91,10 @@ class LoadItem {
         } else {
           Future<List<List<int>>> wait() {
             Completer<List<List<int>>> completer = Completer();
-            item.addListener(LoadListener((chunks) {
-              completer.complete(chunks);
+            item.addListener(LoadListener((success, chunks) {
+              if (success)
+                completer.complete(chunks);
+              else completer.completeError(Exception());
             }));
             return completer.future;
           }
@@ -132,10 +134,12 @@ class LoadItem {
     }
   }
 
-  void _onComplete(List<List<int>> chunks) {
-    _loaded = SynchronousFuture<bool>(true);
-    _proxyItem.server.cacheManager.insert(cacheKey, chunks.expand((e) => e).toList());
-    _proxyItem.itemLoaded(this, chunks);
+  void _onComplete(bool success, List<List<int>>? chunks) {
+    if (success) {
+      _loaded = SynchronousFuture<bool>(true);
+      _proxyItem.server.cacheManager.insert(cacheKey, chunks!.expand((e) => e).toList());
+      _proxyItem.itemLoaded(this, chunks);
+    }
   }
 
   void _onFailed() {

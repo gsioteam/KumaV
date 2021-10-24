@@ -4,18 +4,27 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 
+import 'video_player.dart';
+
 class VideoController extends StatefulWidget {
-  final VlcPlayerController controller;
+  final VlcPlayerController? controller;
   final ProxyItem? proxyItem;
+  final List<VideoResolution> resolutions;
+  final void Function(int index)? onSelectResolution;
+  final int currentSelect;
 
   VideoController({
     Key? key,
-    required this.controller,
+    this.controller,
     this.proxyItem,
+    this.resolutions = const [],
+    this.onSelectResolution,
+    this.currentSelect = 0,
   }) : super(key: key);
 
   @override
@@ -29,6 +38,7 @@ class VideoControllerState extends State<VideoController> {
   Timer? timer;
 
   Duration _oldPosition = Duration.zero;
+  GlobalKey _resolutionKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +66,7 @@ class VideoControllerState extends State<VideoController> {
                 )
             ),
             Visibility(
-              visible: _visible || isDisplay,
+              visible: (_visible || isDisplay),
               child: AnimatedOpacity(
                 opacity: isDisplay ? 1 : 0,
                 duration: Duration(milliseconds: 300),
@@ -70,7 +80,19 @@ class VideoControllerState extends State<VideoController> {
                       ),
                     ),
                     Center(
-                      child: Row(
+                      child: widget.controller == null ?
+                      SizedBox(
+                        width: 52,
+                        height: 52,
+                        child: Center(
+                          child: SpinKitRing(
+                            color: Colors.white,
+                            size: 36,
+                            lineWidth: 3,
+                          ),
+                        ),
+                      )  :
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
@@ -81,16 +103,17 @@ class VideoControllerState extends State<VideoController> {
                           ),
                           Padding(padding: EdgeInsets.only(left: 10)),
                           ValueListenableBuilder<VlcPlayerValue>(
-                            valueListenable: widget.controller,
+                            valueListenable: widget.controller!,
                             builder: (context, value, child) {
                               if (isBuffering) {
                                 return SizedBox(
                                   width: 52,
                                   height: 52,
                                   child: Center(
-                                    child: SpinKitCircle(
+                                    child: SpinKitRing(
                                       color: Colors.white,
                                       size: 36,
+                                      lineWidth: 3,
                                     ),
                                   ),
                                 );
@@ -98,9 +121,10 @@ class VideoControllerState extends State<VideoController> {
                                 return IconButton(
                                   onPressed: () {
                                     if (value.isPlaying) {
-                                      widget.controller.pause();
+                                      widget.controller!.pause();
                                     } else {
-                                      widget.controller.play();
+                                      widget.controller!.play();
+                                      _oldTime = DateTime.now();
                                     }
                                     resetTimer();
                                   },
@@ -120,12 +144,12 @@ class VideoControllerState extends State<VideoController> {
                         ],
                       ),
                     ),
-                    Positioned(
+                    if (widget.controller != null) Positioned(
                       bottom: 4,
                       left: 8,
                       right: 8,
                       child: ValueListenableBuilder<VlcPlayerValue>(
-                        valueListenable: widget.controller,
+                        valueListenable: widget.controller!,
                         builder: (context, value, child) {
                           return ProgressBar(
                             progress: value.position,
@@ -141,10 +165,10 @@ class VideoControllerState extends State<VideoController> {
                             thumbRadius: 6,
                             barHeight: 3,
                             onSeek: (duration) async {
-                              await widget.controller.seekTo(duration);
+                              await widget.controller!.seekTo(duration);
                               _oldTime = DateTime.fromMillisecondsSinceEpoch(0);
                               _oldPosition = duration;
-                              widget.controller.value = widget.controller.value.copyWith(
+                              widget.controller!.value = widget.controller!.value.copyWith(
                                 position: duration,
                               );
                             },
@@ -169,6 +193,75 @@ class VideoControllerState extends State<VideoController> {
                 },
               ),
             ),
+            if (widget.controller != null) ValueListenableBuilder<VlcPlayerValue>(
+                valueListenable: widget.controller!,
+                builder: (context, value, child) {
+                  return Visibility(
+                    visible: value.hasError,
+                    child: Positioned.fill(
+                      child: Material(
+                        color: Colors.black,
+                        child: Center(
+                          child: DefaultTextStyle(
+                            style: TextStyle(
+                              color: Colors.deepOrange
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: 20,
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "Error",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  Padding(padding: EdgeInsets.only(top: 10)),
+                                  Text(value.errorDescription),
+                                ],
+                              ),
+                            )
+                          ),
+                        ),
+                      )
+                    ),
+                  );
+                }
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Row(
+                children: [
+                  Expanded(child: Container()),
+                  if (widget.resolutions.length > 1) _buildResolutionButton(context),
+                  PopupMenuButton(
+                    itemBuilder: (context) {
+                      return [
+                        PopupMenuItem<int>(
+                          child: Row(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(right: 10),
+                                child: Icon(Icons.refresh, color: Colors.black54,),
+                              ),
+                              Text("reload"),
+                            ],
+                          ),
+                          value: 0,
+                        ),
+                      ];
+                    },
+                    onSelected: (index) {
+
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -179,7 +272,7 @@ class VideoControllerState extends State<VideoController> {
   DateTime? _oldTime;
 
   bool get isBuffering {
-    var value = widget.controller.value;
+    var value = widget.controller!.value;
     if (value.duration == Duration.zero) return true;
     if (value.isPlaying) {
       if (value.position == _oldPosition) {
@@ -202,6 +295,7 @@ class VideoControllerState extends State<VideoController> {
     super.initState();
 
     resetTimer();
+    widget.controller?.addListener(_update);
   }
 
   Duration? buffered() {
@@ -211,7 +305,7 @@ class VideoControllerState extends State<VideoController> {
       for (var buf in buffered) {
         per += buf.end - buf.start;
       }
-      return widget.controller.value.duration * per;
+      return widget.controller!.value.duration * per;
     }
   }
 
@@ -220,6 +314,7 @@ class VideoControllerState extends State<VideoController> {
     super.dispose();
     _disposed = true;
     timer?.cancel();
+    widget.controller?.removeListener(_update);
   }
 
   void display() {
@@ -239,9 +334,11 @@ class VideoControllerState extends State<VideoController> {
     timer?.cancel();
     timer = null;
     if (_disposed) return;
-    setState(() {
-      isDisplay = false;
-    });
+    if (widget.controller != null && widget.controller!.value.isPlaying) {
+      setState(() {
+        isDisplay = false;
+      });
+    }
   }
 
   void stopTimer() {
@@ -254,5 +351,77 @@ class VideoControllerState extends State<VideoController> {
     timer = Timer(Duration(milliseconds: 4000), () {
       dismiss();
     });
+  }
+
+  bool _oldPlaying = false;
+  void _update() {
+    var isPlaying = widget.controller!.value.isPlaying;
+    if (isPlaying != _oldPlaying) {
+      _oldPlaying = isPlaying;
+      if (isPlaying) {
+        resetTimer();
+      }
+    }
+  }
+
+  Widget _buildResolutionButton(BuildContext context) {
+    String title;
+    if (widget.resolutions.length > widget.currentSelect) {
+      var resolution = widget.resolutions[widget.currentSelect];
+      title = resolution.title;
+    } else {
+      title = "";
+    }
+    return OutlinedButton(
+      key: _resolutionKey,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title),
+          Icon(Icons.arrow_drop_down),
+        ],
+      ),
+      style: OutlinedButton.styleFrom(
+        primary: Colors.white,
+        side: BorderSide(
+          color: Colors.white,
+        ),
+        minimumSize: Size.zero,
+        padding: EdgeInsets.only(
+          left: 10,
+        ),
+      ),
+      onPressed: () async {
+        var renderObject = _resolutionKey.currentContext?.findRenderObject();
+        var transform = renderObject?.getTransformTo(null);
+        if (transform != null) {
+          var rect = renderObject!.semanticBounds;
+          var leftTop = rect.topLeft;
+          var point = transform.applyToVector3Array([leftTop.dx, leftTop.dy, 0]);
+
+          List<PopupMenuEntry<int>> items = [];
+          for (int i = 0, t = widget.resolutions.length; i < t; ++i) {
+            var resolution = widget.resolutions[i];
+            items.add(PopupMenuItem(
+              child: Text(resolution.title),
+              value: i,
+            ));
+          }
+          var index = await showMenu(
+            context: context,
+            position: RelativeRect.fromLTRB(
+              point[0],
+              point[1],
+              point[0] + rect.width,
+              point[1] + rect.height,
+            ),
+            items: items,
+          );
+          if (index != null && index != widget.currentSelect) {
+            widget.onSelectResolution?.call(index);
+          }
+        }
+      },
+    );
   }
 }

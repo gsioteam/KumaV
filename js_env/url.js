@@ -4,7 +4,7 @@ const Url = url.Url;
 class URL {
     constructor(relative, base) {
         if (base) {
-            this._url = url.resolve(base, relative);
+            this._url = url.parse(url.resolve(base, relative));
         } else {
             this._url = url.parse(relative);
         }

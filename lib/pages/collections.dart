@@ -3,11 +3,9 @@ import 'package:decorated_icon/decorated_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
-import 'package:kumav/extensions/js_request.dart';
-import 'package:kumav/extensions/js_storage.dart';
+import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/pages/plugins.dart';
 import 'package:kumav/pages/video.dart';
-import 'package:kumav/utils/configs.dart';
 import 'package:kumav/utils/image_providers.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/widgets/no_data.dart';
@@ -92,19 +90,15 @@ class _CollectionsState extends State<Collections> {
         entry: index,
         fileSystems: [widget.plugin!.fileSystem],
         onInitialize: (script) {
-          script.addClass(requestClass);
-          script.addClass(storageClass);
+          setupJS(script, widget.plugin!);
 
-          Storage storage = Storage(widget.plugin!);
-          JsValue jsStorage = script.bind(storage, classInfo: storageClass);
-          script.global['_storage'] = jsStorage;
-
-          JsValue func = script.function((argv) {
-            OpenVideoNotification(null).dispatch(context);
+          script.global['openVideo'] = script.function((argv) {
+            OpenVideoNotification(
+              key: argv[0],
+              data: jsValueToDart(argv[1]),
+              plugin: widget.plugin!
+            ).dispatch(context);
           });
-          script.global['openVideo'] = func;
-
-          script.eval(Configs.instance.bundleJS);
         },
       );
     }

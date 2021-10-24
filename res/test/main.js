@@ -8,7 +8,7 @@ class MainController extends Controller {
         var cache = this.readCache();
         let list;
         if (cache) {
-            list = this.parseHtml(cache.html);
+            list = cache.items;
         } else {
             list = [];
         }
@@ -30,7 +30,7 @@ class MainController extends Controller {
 
     async onPressed(index) {
         var data = this.data.list[index];
-        openVideo(data);
+        openVideo(data.link, data);
     }
 
     onRefresh() {
@@ -55,16 +55,17 @@ class MainController extends Controller {
         try {
             let res = await fetch(this.url);
             let html = await res.text();
-            let items = this.parseHtml(html);
+            let items = this.parseHtml(html, this.url);
             localStorage['cache_' + this.id] = JSON.stringify({
                 time: new Date().getTime(),
-                html: html,
+                items: items,
             });
             this.setState(()=>{
                 this.data.list = items;
                 this.data.loading = false;
             });
         } catch (e) {
+            console.log(`${e}\n${e.stack}`);
             this.setState(()=>{
                 this.data.loading = false;
             });

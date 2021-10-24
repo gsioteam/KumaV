@@ -84,7 +84,7 @@ abstract class ProxyItem {
   List<void Function(int)> _onSpeeds = [];
   List<void Function()> _onBuffered = [];
   LoadItem? _lastItem;
-  Map<String, String>? headers;
+  Map<String, dynamic>? headers;
 
   List<LoadItem> _loadItems = [];
   Map<String, LoadItem> _loadItemIndex = Map();
@@ -97,7 +97,7 @@ abstract class ProxyItem {
   ProxyItem._(this._server, String url, this.headers) {
     int index = url.lastIndexOf("/");
     if (index < 0) {
-      throw "Wrong url $_url";
+      throw "Wrong url $url";
     }
     _url = Uri.parse(url);
     _entry = path.basename(_url.path);
@@ -120,7 +120,7 @@ abstract class ProxyItem {
     _speed += length;
   }
 
-  factory ProxyItem(ProxyServer server, String url, {Map<String, String>? headers}) {
+  factory ProxyItem(ProxyServer server, String url, {Map<String, dynamic>? headers}) {
     int idx = url.indexOf('?');
     String raw;
     if (idx >= 0) {
@@ -276,7 +276,7 @@ class HlsProxyItem extends ProxyItem {
 
   Map<Uri, String> cached = Map();
 
-  HlsProxyItem._(ProxyServer server, String url, {Map<String, String>? headers}) : super._(server, url, headers) {
+  HlsProxyItem._(ProxyServer server, String url, {Map<String, dynamic>? headers}) : super._(server, url, headers) {
     String cacheKey = "$key/$entry";
     addLoadItem(LoadItem(
       proxyItem: this,
@@ -527,7 +527,7 @@ class SingleProxyItem extends ProxyItem {
     return _cacheKey!;
   }
 
-  SingleProxyItem._(ProxyServer server, String url, {Map<String, String>? headers}) : super._(server, url, headers) {
+  SingleProxyItem._(ProxyServer server, String url, {Map<String, dynamic>? headers}) : super._(server, url, headers) {
     _rawUrl = url;
     String indexKey = "$cacheKey/index";
     addLoadItem(LoadItem(
@@ -541,7 +541,7 @@ class SingleProxyItem extends ProxyItem {
   }
 
   RequestItem requestHEAD(String url) {
-    Map<String, String> map = {};
+    Map<String, dynamic> map = {};
     if (headers != null)
       map.addAll(headers!);
     map['Range'] = "bytes=0-";
@@ -553,7 +553,7 @@ class SingleProxyItem extends ProxyItem {
   }
 
   RequestItem requestBody(String url, int index, RangeData range) {
-    Map<String, String> map = {};
+    Map<String, dynamic> map = {};
     if (headers != null)
       map.addAll(headers!);
     map['Range'] = "bytes=${range.start}-${range.end - 1}";
@@ -754,7 +754,7 @@ class ProxyServer {
     cacheManager = CacheManager(dir);
 
     _server = await HttpMultiServer.loopback(0);
-    shelf_io.serveRequests(_server, (request) {
+    shelf_io.serveRequests(_server, (request) async {
       print("[${request.method}] ${request.requestedUri}");
       print(request.headers);
       var segs = request.requestedUri.path.split("/");
@@ -771,7 +771,7 @@ class ProxyServer {
       ProxyItem? item = items[key];
       if (item != null) {
         try {
-          return item.handle(request, segs.sublist(split).join("/"));
+          return await item.handle(request, segs.sublist(split).join("/"));
         } catch (e) {
           return Response.internalServerError(body: e.toString());
         }
@@ -782,7 +782,7 @@ class ProxyServer {
     _completer.complete(_server);
   }
 
-  ProxyItem get(String url, {Map<String, String>? headers}) {
+  ProxyItem get(String url, {Map<String, dynamic>? headers}) {
     String key = _calculateKey(url);
     ProxyItem? item = items[key];
     if (item == null) {

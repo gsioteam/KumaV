@@ -84,7 +84,11 @@ class _IndexState extends State<Index> {
                         body: NotificationListener<OpenVideoNotification>(
                           child: _buildBody(),
                           onNotification: (notification) {
-                            _videoKey.currentState?.open();
+                            _videoKey.currentState?.play(VideoInfo(
+                              key: notification.key,
+                              data: notification.data,
+                              plugin: notification.plugin,
+                            ));
                             return true;
                           },
                         ),

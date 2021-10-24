@@ -48,7 +48,7 @@ class Request {
                 };
                 req.onerror = function(ev) {
                     if (!resolved) {
-                        reject(new Error(ev.toString()));
+                        reject(new Error(ev.error));
                     }
                 };
                 req.send(this.body);
@@ -111,7 +111,7 @@ class Response {
                 };
                 this._request.onerror = function(ev) {
                     if (!resolved) {
-                        reject(new Error(ev.toString()));
+                        reject(new Error(ev.error));
                     }
                 };
             });

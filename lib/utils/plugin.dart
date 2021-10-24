@@ -6,6 +6,9 @@ import 'package:crypto/crypto.dart';
 import 'package:convert/convert.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_dapp/file_system.dart';
+import 'package:flutter_dapp/flutter_dapp.dart';
+import 'package:kumav/extensions/js_processor.dart';
+import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/utils/assets_filesystem.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:sembast/sembast.dart';
@@ -18,12 +21,14 @@ class PluginInformation {
   late String name;
   late String index;
   String? icon;
+  late String processor;
   double? appBarElevation;
 
   PluginInformation.fromData(dynamic json) {
     name = json['name'];
     index = json['index'];
     icon = json['icon'];
+    processor = json['processor'];
     if (json['appbar_elevation'] is num)
       appBarElevation = (json['appbar_elevation'] as num).toDouble();
   }
@@ -116,5 +121,19 @@ class Plugin {
     if (!await _cacheRoot.exists()) {
       _cacheRoot.create(recursive: true);
     }
+  }
+
+  JsScript? _script;
+  JsScript? get script {
+    if (_script == null && isValidate) {
+      _script = JsScript(
+          fileSystems: [
+            fileSystem,
+          ],
+      );
+      setupJS(_script!, this);
+      _script!.addClass(processorClass);
+    }
+    return _script;
   }
 }

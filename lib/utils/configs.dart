@@ -1,6 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:path_provider/path_provider.dart' as platform;
 
@@ -23,11 +24,13 @@ class Configs {
   }
 
   late Directory root;
-  late String bundleJS;
+  late JsCompiled bundle;
 
   Future<void> setup(BuildContext context) async {
     root = await platform.getApplicationSupportDirectory();
-    bundleJS = await rootBundle.loadString('res/js/bundle.js');
+    var bundleJS = await rootBundle.loadString('res/js/bundle.js');
+    JsScript script = JsScript();
+    bundle = script.compile(bundleJS);
   }
 
   Plugin? currentPlugin;

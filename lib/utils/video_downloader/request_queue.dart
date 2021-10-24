@@ -5,9 +5,9 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-typedef LoadCallback = void Function(List<List<int>> chunks);
-typedef ResponseCallback = void Function(Response<ResponseBody> response);
-typedef CompleteCallback = void Function(List<List<int>> chunks);
+typedef LoadCallback = void Function(bool secuess, List<List<int>>? chunks);
+typedef ResponseCallback = void Function(Response<ResponseBody>? response);
+typedef CompleteCallback = void Function(bool secuess, List<List<int>>? chunks);
 
 class LoadListener {
   int? reach;
@@ -20,12 +20,12 @@ class RequestItem {
   List<List<int>> chunks = [];
   String url;
   RequestQueue queue;
-  Set<LoadListener> _listeners = Set();
+  Set<LoadListener> _listeners = {};
   Set<ResponseCallback> _responseCallbacks = {};
   int _length = 0;
   late Dio dio;
   Response<ResponseBody>? _response;
-  Map<String, String>? headers;
+  Map<String, dynamic>? headers;
   String method = "GET";
   CompleteCallback? onComplete;
   VoidCallback? onFailed;
@@ -40,7 +40,7 @@ class RequestItem {
     Set<LoadListener> needRemove = {};
     _listeners.forEach((element) {
       if (element.reach != null && element.reach! <= _length) {
-        element.cb.call(chunks);
+        element.cb.call(true, chunks);
         needRemove.add(element);
       }
     });
@@ -50,34 +50,57 @@ class RequestItem {
   void _complete() {
     _isComplete = true;
     _listeners.forEach((element) {
-      element.cb.call(chunks);
+      element.cb.call(true, chunks);
     });
     _listeners.clear();
     queue._finished(this);
-    onComplete?.call(chunks);
+    onComplete?.call(true, chunks);
   }
 
   void _failed() {
+    _listeners.forEach((element) {
+      element.cb.call(false, null);
+    });
     _listeners.clear();
     queue._finished(this);
     onFailed?.call();
+    onComplete?.call(false, null);
   }
 
   void _receiveResponse() {
-    _responseCallbacks.forEach((element) {
-      element.call(_response!);
+    var set = Set.from(_responseCallbacks);
+    set.forEach((element) {
+      element.call(_response);
     });
   }
 
-  void _start() async {
+  bool _loading = false;
+  void request() async {
+    if (_loading) return;
+    _loading = true;
+    try {
+      await _start();
+    } finally {
+      _loading = false;
+    }
+  }
+
+  Future<void> _start() async {
     Uri uri = Uri.parse(url);
     dio = Dio(BaseOptions(
       headers: headers,
       responseType: ResponseType.stream
     ));
-    _response = await dio.requestUri<ResponseBody>(
-      uri
-    );
+    try {
+      _response = await dio.requestUri<ResponseBody>(
+          uri
+      );
+    } catch (e) {
+      _response = null;
+      _receiveResponse();
+      _failed();
+      return;
+    }
     if (_response!.statusCode != null && _response!.statusCode! >= 200 && _response!.statusCode! < 300) {
       _receiveResponse();
       await for (var chunk in _response!.data!.stream) {
@@ -85,6 +108,8 @@ class RequestItem {
       }
       _complete();
     } else {
+      _response = null;
+      _receiveResponse();
       _failed();
     }
   }
@@ -100,7 +125,7 @@ class RequestItem {
 
   void addListener(LoadListener listener) {
     if (isComplete) {
-      listener.cb.call(chunks);
+      listener.cb.call(true, chunks);
     } else {
       _listeners.add(listener);
     }
@@ -116,8 +141,11 @@ class RequestItem {
     if (reach != null && _length >= reach)
       return SynchronousFuture(chunks);
     Completer<List<List<int>>> completer = Completer();
-    _listeners.add(LoadListener((chunks) {
-      completer.complete(chunks);
+    _listeners.add(LoadListener((success, chunks) {
+      if (success)
+        completer.complete(chunks);
+      else
+        completer.completeError(Exception());
     }, reach));
     return completer.future;
   }
@@ -142,9 +170,15 @@ class RequestItem {
     }
 
     Completer<Response<ResponseBody>> completer = Completer();
-    _responseCallbacks.add((response) {
-      completer.complete(response);
-    });
+    void receiveResponse(Response<ResponseBody>? response) {
+      _responseCallbacks.remove(receiveResponse);
+      if (response == null) {
+        completer.completeError(Exception());
+      } else {
+        completer.complete(response);
+      }
+    }
+    _responseCallbacks.add(receiveResponse);
     return completer.future;
   }
 }
@@ -154,7 +188,7 @@ class RequestQueue {
 
   RequestItem start(String url, {
     String? key,
-    Map<String, String>? headers,
+    Map<String, dynamic>? headers,
     String method = "GET"
   }) {
     key = key ?? url;
@@ -164,8 +198,8 @@ class RequestQueue {
       item.headers = headers;
       item.method = method;
       items[key] = item;
-      item._start();
     }
+    item.request();
     return item;
   }
 

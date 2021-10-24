@@ -1,5 +1,6 @@
 {
   "name": "Test",
   "index": "index",
-  "appbar_elevation": 0
+  "appbar_elevation": 0,
+  "processor": "processor"
 }

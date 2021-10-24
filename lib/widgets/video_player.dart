@@ -12,9 +12,20 @@ import 'package:kumav/widgets/video_controller.dart';
 
 import 'video_sheet.dart';
 
+class DataSource {
+  String src;
+  Map<String, dynamic>? headers;
+
+  DataSource(this.src, [this.headers]);
+}
+
+abstract class VideoResolution {
+  String get title;
+}
+
 class _VideoInner extends StatefulWidget {
   final BoxFit fit;
-  final VlcPlayerController controller;
+  final VlcPlayerController? controller;
   final VoidCallback? onTap;
 
   _VideoInner({
@@ -42,8 +53,8 @@ class _VideoInnerState extends State<_VideoInner> {
           child: SizedBox(
             width: hasSize ? size.width : 320,
             height: hasSize ? size.height : 180,
-            child: VlcPlayer(
-              controller: widget.controller,
+            child: widget.controller == null ? null : VlcPlayer(
+              controller: widget.controller!,
               aspectRatio: hasSize ? size.width / size.height : 16 / 9,
             ),
           ),
@@ -53,22 +64,44 @@ class _VideoInnerState extends State<_VideoInner> {
     );
   }
 
+  void _touch() {
+    if (widget.controller != null) {
+      var value = widget.controller!.value;
+      size = value.size;
+      widget.controller!.addListener(_update);
+    } else {
+      size = Size.zero;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    var value = widget.controller.value;
-    size = value.size;
-    widget.controller.addListener(_update);
+
+    _touch();
   }
 
   @override
   void dispose() {
     super.dispose();
-    widget.controller.removeListener(_update);
+    widget.controller?.removeListener(_update);
+  }
+
+  @override
+  void didUpdateWidget(covariant _VideoInner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_update);
+      if (widget.controller != null) {
+        var value = widget.controller!.value;
+        size = value.size;
+        widget.controller!.addListener(_update);
+      }
+    }
   }
 
   void _update() {
-    var newSize = widget.controller.value.size;
+    var newSize = widget.controller!.value.size;
     if (size != newSize) {
       setState(() {
         size = newSize;
@@ -80,12 +113,18 @@ class _VideoInnerState extends State<_VideoInner> {
 class VideoPlayer extends StatefulWidget {
 
   final ValueNotifier<RectValue> controller;
-  final String dataSource;
+  final DataSource? dataSource;
+  final List<VideoResolution> resolutions;
+  final void Function(int index)? onSelectResolution;
+  final int currentSelect;
 
   VideoPlayer({
     Key? key,
     required this.dataSource,
     required this.controller,
+    this.resolutions = const [],
+    this.onSelectResolution,
+    this.currentSelect = 0,
   }) : super(key: key);
 
   @override
@@ -96,8 +135,8 @@ const double MinWidth = 120;
 
 class _VideoPlayerState extends State<VideoPlayer> {
 
-  late VlcPlayerController controller;
-  late ProxyItem proxyItem;
+  VlcPlayerController? controller;
+  ProxyItem? proxyItem;
   double aspectRatio = 16 / 9;
 
   @override
@@ -157,15 +196,15 @@ class _VideoPlayerState extends State<VideoPlayer> {
                                     },
                                   ),
                                 ),
-                                ValueListenableBuilder<VlcPlayerValue>(
-                                  valueListenable: controller,
+                                if (controller != null) ValueListenableBuilder<VlcPlayerValue>(
+                                  valueListenable: controller!,
                                   builder: (context, value, child) {
                                     return IconButton(
                                       onPressed: () {
                                         if (value.isPlaying) {
-                                          controller.pause();
+                                          controller!.pause();
                                         } else {
-                                          controller.play();
+                                          controller!.play();
                                         }
                                       },
                                       icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
@@ -229,14 +268,17 @@ class _VideoPlayerState extends State<VideoPlayer> {
               },
               child: Padding(
                 padding: EdgeInsets.only(
-                    top: padding.top
+                  top: padding.top,
                 ),
                 child: VideoController(
                   controller: controller,
                   proxyItem: proxyItem,
+                  resolutions: widget.resolutions,
+                  currentSelect: widget.currentSelect,
+                  onSelectResolution: widget.onSelectResolution,
                 ),
               ),
-            ),
+            )
           ],
         );
       },
@@ -246,21 +288,25 @@ class _VideoPlayerState extends State<VideoPlayer> {
   @override
   void initState() {
     super.initState();
-    proxyItem = ProxyServer.instance.get(widget.dataSource);
-    proxyItem.retain();
-    controller = VlcPlayerController.network(proxyItem.localServerUri.toString());
-    controller.addListener(_update);
+
+    var dataSource = widget.dataSource;
+    if (dataSource != null) {
+      proxyItem = ProxyServer.instance.get(dataSource.src, headers: dataSource.headers);
+      proxyItem!.retain();
+      controller = VlcPlayerController.network(proxyItem!.localServerUri.toString());
+      controller!.addListener(_update);
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
-    controller.dispose();
-    proxyItem.release();
+    controller?.dispose();
+    proxyItem?.release();
   }
 
   void _update() {
-    var size = controller.value.size;
+    var size = controller!.value.size;
     if (size != Size.zero) {
       double ratio = size.width / size.height;
       if (aspectRatio != ratio) {
