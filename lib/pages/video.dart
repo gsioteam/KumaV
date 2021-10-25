@@ -341,6 +341,11 @@ class _VideoState extends State<Video> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _videoInfo = ValueWidget.of<VideoInfo>(context)!;
+    Manager.instance.histories.add(
+      key: _videoInfo.key,
+      data: _videoInfo.data,
+      plugin: _videoInfo.plugin,
+    );
     _processor = Processor(_videoInfo.key);
     _processor.addListener(_update);
     var script = _videoInfo.plugin.script;

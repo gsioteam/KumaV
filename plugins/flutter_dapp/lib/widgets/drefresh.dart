@@ -148,7 +148,6 @@ class _DRefreshState extends State<DRefresh> with TickerProviderStateMixin {
   void didUpdateWidget(covariant DRefresh oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.loading != oldWidget.loading) {
-      print("update ${widget.loading}");
       if (!widget.loading) {
         waitForRefresh = false;
         _dismiss = true;

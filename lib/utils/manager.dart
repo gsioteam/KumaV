@@ -1,4 +1,5 @@
 
+import 'package:kumav/utils/histories.dart';
 import 'package:kumav/utils/plugins.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
@@ -25,6 +26,9 @@ class Manager extends GetReady {
   late Plugins _plugins;
   Plugins get plugins => _plugins;
 
+  late Histories _histories;
+  Histories get histories => _histories;
+
   late Database database;
 
   @override
@@ -37,6 +41,8 @@ class Manager extends GetReady {
     await _downloads.ready;
     _plugins = Plugins(database);
     await _plugins.ready;
+    _histories = Histories(database);
+    await _histories.ready;
   }
 
 
