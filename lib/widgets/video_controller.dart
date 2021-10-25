@@ -36,6 +36,7 @@ class VideoControllerState extends State<VideoController> {
 
   bool isDisplay = true;
   bool _visible = true;
+  ValueNotifier<int> _speed = ValueNotifier(0);
   Timer? timer;
 
   Duration _oldPosition = Duration.zero;
@@ -152,12 +153,27 @@ class VideoControllerState extends State<VideoController> {
                       child: Row(
                         children: [
                           IconButton(
-                              onPressed: () {
-                                VideoSheetMinifyNotification().dispatch(context);
-                              },
-                              icon: Icon(Icons.keyboard_arrow_down)
+                            onPressed: () {
+                              VideoSheetMinifyNotification().dispatch(context);
+                            },
+                            icon: Icon(Icons.keyboard_arrow_down)
                           ),
                           Expanded(child: Container()),
+                          ValueListenableBuilder<int>(
+                            valueListenable: _speed,
+                            builder: (context, value, child) {
+                              if (value > 0) {
+                                return Text(
+                                  _speedText(value),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                );
+                              } else {
+                                return Container();
+                              }
+                            }
+                          ),
                           if (widget.resolutions.length > 1) _buildResolutionButton(context),
                           PopupMenuButton(
                             itemBuilder: (context) {
@@ -303,6 +319,7 @@ class VideoControllerState extends State<VideoController> {
 
     resetTimer();
     widget.controller?.addListener(_update);
+    widget.proxyItem?.addOnSpeed(_updateSpeed);
   }
 
   Duration? buffered() {
@@ -322,6 +339,7 @@ class VideoControllerState extends State<VideoController> {
     _disposed = true;
     timer?.cancel();
     widget.controller?.removeListener(_update);
+    widget.proxyItem?.removeOnSpeed(_updateSpeed);
   }
 
   void display() {
@@ -414,6 +432,7 @@ class VideoControllerState extends State<VideoController> {
               value: i,
             ));
           }
+          stopTimer();
           var index = await showMenu(
             context: context,
             position: RelativeRect.fromLTRB(
@@ -424,11 +443,26 @@ class VideoControllerState extends State<VideoController> {
             ),
             items: items,
           );
+          resetTimer();
           if (index != null && index != widget.currentSelect) {
             widget.onSelectResolution?.call(index);
           }
         }
       },
     );
+  }
+
+  void _updateSpeed(int speed) {
+    _speed.value = speed;
+  }
+
+  String _speedText(int speed) {
+    double sp = speed / 1024;
+    String unit = "KB";
+    if (sp > 1024) {
+      sp = sp / 1024;
+      unit = "MB";
+    }
+    return "${sp.toStringAsFixed(2)} $unit";
   }
 }
