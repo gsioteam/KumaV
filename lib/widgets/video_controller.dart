@@ -167,6 +167,7 @@ class VideoControllerState extends State<VideoController> {
                                   _speedText(value),
                                   style: TextStyle(
                                     color: Colors.white,
+                                    fontSize: 14,
                                   ),
                                 );
                               } else {
@@ -402,7 +403,12 @@ class VideoControllerState extends State<VideoController> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(title),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+            ),
+          ),
           Icon(Icons.arrow_drop_down),
         ],
       ),

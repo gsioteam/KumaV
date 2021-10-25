@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/configs.dart';
+import 'package:kumav/utils/manager.dart';
 import 'package:kumav/widgets/video_sheet.dart';
 
 import 'collections.dart';
@@ -49,7 +50,7 @@ class _IndexState extends State<Index> {
       case HomePages.Home: {
         return Collections(
           key: ValueKey(HomePages.Home),
-          plugin: Configs.instance.currentPlugin,
+          plugin: Manager.instance.plugins.current,
         );
       }
       case HomePages.History: {

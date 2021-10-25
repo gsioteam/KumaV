@@ -34,6 +34,6 @@ ImageProvider pluginImageProvider(Plugin? plugin) {
     }
   }
   return CachedNetworkImageProvider(
-      "https://www.tinygraphs.com/squares/${_generateMd5(plugin?.uri.toString() ?? "null")}?theme=bythepool&numcolors=3&size=180&fmt=jpg",
+      "https://www.tinygraphs.com/squares/${_generateMd5(plugin?.id ?? "null")}?theme=bythepool&numcolors=3&size=180&fmt=jpg",
   );
 }

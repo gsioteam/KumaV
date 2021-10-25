@@ -5,12 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/extensions/js_processor.dart';
+import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/widgets/player_wrap.dart';
 import 'package:kumav/widgets/value_widget.dart';
 import 'package:kumav/widgets/video_player.dart';
 import 'package:kumav/widgets/video_sheet.dart';
 import 'package:sembast/sembast.dart';
+
+import '../localizations/localizations.dart';
 
 enum _SortType {
   Reverse,
@@ -84,6 +87,7 @@ class _VideoState extends State<Video> {
 
   ProcessorItem? _currentItem;
   _SortType _sortType = _SortType.Reverse;
+  late DownloadController downloadController;
 
   bool loading = false;
 
@@ -91,6 +95,7 @@ class _VideoState extends State<Video> {
 
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
         child: Scaffold(
           body: CustomScrollView(
@@ -109,6 +114,7 @@ class _VideoState extends State<Video> {
                       controller: widget.controller,
                       title: _processor.value.title,
                       subtitle: _processor.value.subtitle,
+                      downloadController: downloadController,
                     ),
                   ),
                   size: 270,
@@ -127,12 +133,60 @@ class _VideoState extends State<Video> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            value.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  value.title,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              ValueListenableBuilder<bool>(
+                                  valueListenable: downloadController,
+                                  builder: (context, value, child) {
+                                    return IconButton(
+                                      icon: Icon(Icons.file_download),
+                                      onPressed: value ? () {
+
+                                      } : null,
+                                      color: theme.primaryColor,
+                                      disabledColor: theme.disabledColor,
+                                    );
+                                  }
+                              ),
+                              Manager.instance.favorites.contains(
+                                key: _videoInfo.key,
+                                plugin: _videoInfo.plugin,
+                              ) ? IconButton(
+                                icon: Icon(
+                                  Icons.favorite,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    Manager.instance.favorites.remove(
+                                      key: _videoInfo.key,
+                                      plugin: _videoInfo.plugin
+                                    );
+                                  });
+                                },
+                                color: Colors.red,
+                              ) : IconButton(
+                                icon: Icon(Icons.favorite_border),
+                                onPressed: () {
+                                  setState(() {
+                                    Manager.instance.favorites.add(
+                                      key: _videoInfo.key,
+                                      plugin: _videoInfo.plugin,
+                                      data: _videoInfo.data,
+                                    );
+                                  });
+                                },
+                                color: theme.disabledColor,
+                              ),
+                            ],
                           ),
                           if (value.subtitle.isNotEmpty) Padding(
                             padding: EdgeInsets.symmetric(
@@ -153,6 +207,81 @@ class _VideoState extends State<Video> {
                   );
                 },
               ),
+              SliverPersistentHeader(
+              delegate: _VideoHeaderDelegate(
+                  child: Material(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Theme.of(context).disabledColor.withOpacity(0.1),
+                          ),
+                          bottom: BorderSide(
+                            color: Theme.of(context).disabledColor.withOpacity(0.1),
+                          ),
+                        ),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                      ),
+                      child: Center(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.list,
+                              color: Theme.of(context).disabledColor,
+                            ),
+                            Padding(padding: EdgeInsets.only(right: 6)),
+                            Expanded(child: Text(kt("play_list"))),
+                            PopupMenuButton<int>(
+                              child: Icon(
+                                Icons.sort,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              itemBuilder: (context) {
+                                PopupMenuEntry<int> makeItem(String text, int value) {
+                                  return PopupMenuItem(
+                                    child: Text.rich(TextSpan(
+                                      children: [
+                                        WidgetSpan(
+                                          child: Icon(
+                                            Icons.arrow_right,
+                                            color: value == _sortType.index ?
+                                            Theme.of(context).primaryColor :
+                                            Colors.transparent,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: text
+                                        ),
+                                      ]
+                                    )),
+                                    value: value,
+                                  );
+                                }
+                                return [
+                                  makeItem(kt('reverse_order'), 0),
+                                  makeItem(kt('order'), 1),
+                                ];
+                              },
+                              onSelected: (index) {
+                                setState(() {
+                                  _sortType = _SortType.values[index];
+                                  _oldList = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    color: Theme.of(context).canvasColor,
+                  ),
+                  key: null,
+                  size: 36,
+                ),
+                pinned: true,
+              ),
               ValueListenableBuilder<ProcessorValue>(
                 valueListenable: _processor,
                 builder: (context, value, child) {
@@ -160,6 +289,10 @@ class _VideoState extends State<Video> {
                     delegate: SliverChildBuilderDelegate((context, index) {
                       var item = sorted[index];
                       return ListTile(
+                        trailing: Icon(
+                          Icons.play_circle_fill,
+                          color: item == _currentItem ? Theme.of(context).primaryColor : Colors.transparent,
+                        ),
                         title: Text(item.title),
                         subtitle: Text(item.subtitle),
                         onTap: item.key == _videoInfo.key ? null : () {
@@ -189,6 +322,8 @@ class _VideoState extends State<Video> {
     super.initState();
     controller = ScrollController();
     controller.addListener(_onScroll);
+
+    downloadController = DownloadController();
   }
 
   @override
@@ -199,6 +334,7 @@ class _VideoState extends State<Video> {
       _jsProcessor?.invoke("dispose");
     else
       _processor.dispose();
+    downloadController.dispose();
   }
 
   @override
@@ -269,9 +405,6 @@ class _VideoState extends State<Video> {
       });
     }
   }
-
-
-  // Iterable<ProcessorItem> _sort
 
   List<ProcessorItem>? _oldList;
   List<ProcessorItem> _sorted = [];

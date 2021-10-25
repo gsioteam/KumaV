@@ -41,7 +41,6 @@ class Plugin {
   RecordRef _storageRecordRed = StoreRef.main().record('storage');
 
   late String id;
-  Uri uri;
 
   late Database database;
   late Map storage;
@@ -61,13 +60,12 @@ class Plugin {
   bool get isValidate => _information != null;
 
 
-  Plugin(this.uri) {
-    id = hex.encode(md5.convert(utf8.encode(this.uri.toString())).bytes);
+  Plugin(this.id) {
     _test = false;
     _ready = _setup(null, false);
   }
 
-  Plugin.test(BuildContext context) : this.uri = Uri.parse('test://test') {
+  Plugin.test(BuildContext context) {
     id = 'test';
     _test = true;
     _ready = _setup(context, true);
@@ -89,14 +87,6 @@ class Plugin {
       var dir = Directory("${_root.path}/$id");
       if (!await dir.exists()) await dir.create(recursive: true);
       this.fileSystem = IOFileSystem(dir);
-
-      if (await GitRepository.isValidRepo(dir.path)) {
-        repository = await GitRepository.load(dir.path);
-      } else {
-        await GitRepository.init(dir.path);
-        repository = await GitRepository.load(dir.path);
-        repository!.addRemote('origin', uri.toString());
-      }
     }
     try {
       var str = fileSystem.read('/config.json')!;

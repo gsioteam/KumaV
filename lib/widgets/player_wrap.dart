@@ -7,8 +7,13 @@ import 'package:kumav/extensions/js_processor.dart';
 import 'video_player.dart';
 import 'video_sheet.dart';
 
-class Resolution with JsProxy, VideoResolution {
+class DownloadController extends ValueNotifier<bool> {
+  VoidCallback? download;
 
+  DownloadController() : super(false);
+}
+
+class Resolution with JsProxy, VideoResolution {
   JsValue value;
 
   String get title => value["title"];
@@ -29,6 +34,7 @@ class PlayerWrap extends StatefulWidget {
   final ValueNotifier<RectValue> controller;
   final String title;
   final String subtitle;
+  final DownloadController downloadController;
 
   PlayerWrap({
     Key? key,
@@ -37,6 +43,7 @@ class PlayerWrap extends StatefulWidget {
     required this.controller,
     required this.title,
     required this.subtitle,
+    required this.downloadController,
   }) : super(key: key);
 
   @override
@@ -78,7 +85,9 @@ class _PlayerWrapState extends State<PlayerWrap> {
   void initState() {
     super.initState();
 
+    widget.downloadController.value = false;
     getVideo();
+    widget.downloadController.download = _onDownload;
   }
 
   void getVideo() async {
@@ -95,6 +104,7 @@ class _PlayerWrapState extends State<PlayerWrap> {
           setState(() {
             _current = resolutions[0];
           });
+          widget.downloadController.value = true;
         }
       } catch (e) {
         Fluttertoast.showToast(msg: e.toString());
@@ -107,6 +117,8 @@ class _PlayerWrapState extends State<PlayerWrap> {
     super.dispose();
 
     clearResolutions();
+    if (widget.downloadController.download == _onDownload)
+      widget.downloadController.download = null;
   }
 
   @override
@@ -124,5 +136,9 @@ class _PlayerWrapState extends State<PlayerWrap> {
       resolution.dispose();
     }
     resolutions.clear();
+  }
+
+  void _onDownload() {
+
   }
 }

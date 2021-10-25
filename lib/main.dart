@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kumav/utils/assets_filesystem.dart';
+import 'package:kumav/utils/manager.dart';
 
 import 'localizations/localizations.dart';
 // import 'favorites_page.dart';
@@ -59,6 +60,7 @@ class MainAppState extends State<MainApp> {
             unselectedItemColor: Colors.black54,
             type: BottomNavigationBarType.fixed,
           ),
+          scaffoldBackgroundColor: Color(0xffeeeeee),
           appBarTheme: AppBarTheme(
             brightness: Brightness.dark
           ),
@@ -129,11 +131,13 @@ class SplashScreenState extends State<SplashScreen> {
     await Plugin.setup();
     await Configs.instance.setup(context);
     await ProxyServer.instance.ready();
+    await Manager.instance.ready;
 
     if (_isTest) {
       Plugin plugin = Plugin.test(context);
       await plugin.ready;
-      Configs.instance.currentPlugin = plugin;
+      Manager.instance.plugins[plugin.id] = plugin;
+      Manager.instance.plugins.current = plugin;
     }
   }
 

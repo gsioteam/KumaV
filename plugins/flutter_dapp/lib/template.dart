@@ -29,7 +29,7 @@ Register register = Register(() {
       endDrawer: node.s<Widget>("endDrawer"),
       bottomNavigationBar: node.s<Widget>("bottomNavigationBar"),
       bottomSheet: node.s<Widget>("bottomSheet"),
-      backgroundColor: node.s<Color>("backgroundColor"),
+      backgroundColor: node.s<Color>("background"),
       resizeToAvoidBottomInset: node.s<bool>("resizeToAvoidBottomInset"),
     );
   });
@@ -283,6 +283,7 @@ Register register = Register(() {
         body: TabBarView(
           children: children,
         ),
+        backgroundColor: node.s<Color>("background"),
       ),
     );
   });

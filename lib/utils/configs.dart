@@ -32,6 +32,4 @@ class Configs {
     JsScript script = JsScript();
     bundle = script.compile(bundleJS);
   }
-
-  Plugin? currentPlugin;
 }
