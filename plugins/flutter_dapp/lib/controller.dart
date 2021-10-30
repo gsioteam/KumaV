@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dapp/dapp_state.dart';
 import 'package:js_script/js_script.dart';
 import 'package:js_script/types.dart';
 
@@ -34,6 +35,16 @@ class Controller {
       return ret;
     }
   }
+
+  JsValue? find(String key) {
+    var res = state?.find(key);
+    if (res is State) {
+      StateValue stateValue = StateValue(res);
+      JsValue value = state!.script.bind(stateValue, classInfo: stateClass);
+      stateValue.setup(value);
+      return value;
+    }
+  }
 }
 
 ClassInfo controllerClass = ClassInfo<Controller>(
@@ -43,6 +54,7 @@ ClassInfo controllerClass = ClassInfo<Controller>(
   },
   functions: {
     "setState": JsFunction.ins((obj, argv) => obj.setState(argv[0])),
-    "navigateTo": JsFunction.ins((obj, argv) => obj.navigateTo(argv[0], argv[1]))
+    "navigateTo": JsFunction.ins((obj, argv) => obj.navigateTo(argv[0], argv[1])),
+    "findElement": JsFunction.ins((obj, argv) => obj.find(argv[0])),
   }
 );

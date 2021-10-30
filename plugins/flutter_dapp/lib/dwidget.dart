@@ -7,6 +7,7 @@ import 'package:js_script/js_script.dart';
 import 'package:path/path.dart' as path;
 import 'package:xml_layout/xml_layout.dart';
 import 'js_wrap.dart';
+import 'dapp_state.dart';
 
 typedef ControllerBuilder = dynamic Function(JsScript script, DWidgetState state);
 
@@ -55,14 +56,21 @@ class DWidget extends StatefulWidget {
   }
 }
 
-class DWidgetState extends State<DWidget> {
+class DWidgetState extends DAppState<DWidget> {
 
   late String template;
   late JsValue controller;
   late String file;
+  GlobalKey<XmlLayoutState> _layoutKey = GlobalKey();
   bool _ready = false;
 
   JsScript get script => widget.script;
+
+  DWidgetState() {
+    registerMethod("getController", () {
+      return controller;
+    });
+  }
 
   void updateData(VoidCallback callback) {
     if (_ready) {
@@ -123,6 +131,7 @@ class DWidgetState extends State<DWidget> {
     }
     return _InheritedContext(
       child: XmlLayout(
+        key: _layoutKey,
         template: template,
         objects: objects,
         onUnkownElement: (node, key) {
@@ -149,4 +158,8 @@ class DWidgetState extends State<DWidget> {
   }
 
   ControllerBuilder get controllerBuilder => widget.controllerBuilder;
+
+  State? find(String key) {
+    return _layoutKey.currentState?.find(key)?.currentState;
+  }
 }

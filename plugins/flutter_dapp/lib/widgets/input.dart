@@ -1,6 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../dapp_state.dart';
 
 typedef InputChangedCallback = void Function(String newText);
 typedef InputSubmitCallback = void Function(String newText);
@@ -32,10 +33,23 @@ class Input extends StatefulWidget {
   State<StatefulWidget> createState() => _InputState();
 }
 
-class _InputState extends State<Input> {
+class _InputState extends DAppState<Input> {
 
   late TextEditingController controller;
   late FocusNode focusNode;
+
+  _InputState() {
+    registerMethod("focus", () {
+      focusNode.requestFocus();
+    });
+    registerMethod("blur", () {
+      focusNode.unfocus();
+    });
+    registerMethod("submit", () {
+      focusNode.unfocus();
+      widget.onSubmit?.call(controller.text);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +84,7 @@ class _InputState extends State<Input> {
   @override
   void didUpdateWidget(covariant Input oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.text != oldWidget.text) {
+    if (widget.text != controller.text) {
       controller.text = widget.text;
     }
   }

@@ -1,45 +1,62 @@
 
+const baseURL = 'http://www.qimiqimi.co/index.php/vod/search/wd/{0}/page/{1}.html';
+
 class SearchController extends Controller {
 
     load() {
         let str = localStorage['hints'];
         let hints = [];
         if (str) {
-            hints = JSON.parse(str);
+            let json = JSON.parse(str);
+            if (json.push) {
+                hints = json;
+            }
         }
-        console.log(hints);
         this.data = {
             list: [],
             focus: false,
             hints: hints,
+            text: ''
         };
     }
 
+    makeURL(word, page) {
+        return baseURL.replace('{0}', glib.Encoder.urlEncode(this.key)).replace('{1}', page + 1);
+    }
+
     onSearchClicked() {
-        console.log("on clicked!");
+        this.onTextSubmit(this.data.text);
     } 
 
     onTextChange(text) {
-        console.log(`onChange ${text}`);
+        this.data.text = text;
     }
 
     onTextSubmit(text) {
-        console.log(`onSubmit ${text}`);
-        this.setState(()=>{
-            this.data.hints.push(text);
-            localStorage['hints'] = JSON.stringify(this.data.hints);
-        });
+        let hints = this.data.hints;
+        if (text.length > 0) {
+            if (hints.indexOf(text) < 0) {
+                this.setState(()=>{
+                    hints.unshift(text);
+                    while (hints.length > 30) {
+                        hints.pop();
+                    }
+    
+                    localStorage['hints'] = JSON.stringify(hints);
+                });
+            }
+
+            this.load();
+        }
     }
 
     onTextFocus() {
-        console.log("onFocus");
         this.setState(()=>{
             this.data.focus = true;
         });
     }
 
     onTextBlur() {
-        console.log("onBlur");
         this.setState(()=>{
             this.data.focus = false;
         });
@@ -50,6 +67,16 @@ class SearchController extends Controller {
     }
 
     onHintPressed(index) {
+        let hint = this.data.hints[index];
+        if (hint) {
+            this.setState(()=>{
+                this.data.text = hint;
+                this.findElement('input').submit();
+            });
+        }
+    }
+
+    load(url) {
 
     }
 }

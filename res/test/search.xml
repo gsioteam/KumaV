@@ -11,7 +11,7 @@
                 </button>
             </attr:actions>
 
-            <input autofocus="true">
+            <input autofocus="true" text="$text" id="input">
                 <attr:onChange>
                     <callback function="onTextChange"/>
                 </attr:onChange>
@@ -61,7 +61,7 @@
                                 </script>
                                 <list-item>
                                     <attr:onTap>
-                                        <callback function="onHintPressed" args="array($item)"/>
+                                        <callback function="onHintPressed" args="array(${args[1]})"/>
                                     </attr:onTap>
                                     <attr:leading>
                                         <icon>history</icon>
