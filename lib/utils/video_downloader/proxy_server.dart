@@ -265,6 +265,7 @@ abstract class ProxyItem {
   }
 
   Uri get localServerUri => Uri.parse("http://localhost:${server.server.port}/$key/$entry");
+
 }
 
 enum ParseState {
@@ -509,12 +510,17 @@ class HlsProxyItem extends ProxyItem {
   @override
   int get total => 0;
 
+  @override
+  void dispose() {
+    super.dispose();
+    stopLoading();
+  }
 }
 
 class SingleProxyItem extends ProxyItem {
 
   static const int STREAM_LENGTH = 2 * 1024;
-  static const int BLOCK_LENGTH = 5 * 1024 * 1024;
+  static const int BLOCK_LENGTH = 1 * 1024 * 1024;
   int? contentLength;
   bool canSeek = false;
   late String _rawUrl;
@@ -575,7 +581,6 @@ class SingleProxyItem extends ProxyItem {
       LoadItem item = getLoadItem(indexKey)!;
       var stream = item.read();
       String str = await utf8.decodeStream(stream);
-      print("Head: $str");
       Map<String, dynamic> headers = jsonDecode(str);
       _parseHeader(headers);
       if (contentLength! <= 0) {
@@ -718,6 +723,12 @@ class SingleProxyItem extends ProxyItem {
       await for (var buf in item.read()) {
       }
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    stopLoading();
   }
 }
 

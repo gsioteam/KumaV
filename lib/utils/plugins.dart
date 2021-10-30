@@ -36,6 +36,9 @@ class Plugins extends GetReady {
   Future<Plugin> _getPlugin(String id) async {
     Plugin plugin = Plugin(id);
     await plugin.ready;
+    if (!plugin.isValidate) {
+      _plugins.remove(plugin.id);
+    }
     return plugin;
   }
 

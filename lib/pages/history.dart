@@ -31,6 +31,40 @@ class _HistoryState extends State<History> {
     return Scaffold(
       appBar: AppBar(
         title: Text(kt('history')),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              var ret = await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: Text(kt('confirm')),
+                    content: Text(kt('clear_history')),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: Text(kt('no')),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true);
+                        },
+                        child: Text(kt('yes')),
+                      ),
+                    ],
+                  );
+                }
+              );
+              if (ret == true) {
+                await Manager.instance.histories.clear();
+                setState(() { });
+              }
+            },
+            icon: Icon(Icons.clear_all)
+          ),
+        ],
       ),
       body: NotificationListener<ScrollUpdateNotification>(
         child: ListView.builder(
@@ -57,6 +91,7 @@ class _HistoryState extends State<History> {
                   Fluttertoast.showToast(msg: kt('no_plugin'));
                 }
               },
+              tileColor: Theme.of(context).canvasColor,
             );
           },
           itemCount: items.length,

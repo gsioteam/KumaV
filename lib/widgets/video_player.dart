@@ -6,10 +6,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_vlc_player/flutter_vlc_player.dart';
+import 'package:neo_video_player/neo_video_player.dart' as neo;
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 import 'package:kumav/widgets/video_controller.dart';
 
+import 'video_inner.dart';
 import 'video_sheet.dart';
 
 class DataSource {
@@ -21,58 +22,6 @@ class DataSource {
 
 abstract class VideoResolution {
   String get title;
-}
-
-class _VideoInner extends StatefulWidget {
-  final BoxFit fit;
-  final VlcPlayerController? controller;
-  final VoidCallback? onTap;
-
-  _VideoInner({
-    Key? key,
-    this.fit = BoxFit.contain,
-    required this.controller,
-    this.onTap,
-  }) : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => _VideoInnerState();
-}
-
-class _VideoInnerState extends State<_VideoInner> {
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      child: Material(
-        color: Colors.black,
-        child: FittedBox(
-          fit: widget.fit,
-          child: SizedBox(
-            width: 320,
-            height: 180,
-            child: widget.controller == null ? null : VlcPlayer(
-              controller: widget.controller!,
-              aspectRatio: 16 / 9,
-            ),
-          ),
-        ),
-      ),
-      onTap: widget.onTap,
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
 }
 
 class VideoPlayer extends StatefulWidget {
@@ -104,7 +53,7 @@ const double MinWidth = 120;
 
 class _VideoPlayerState extends State<VideoPlayer> {
 
-  VlcPlayerController? controller;
+  neo.VideoPlayerController? controller;
   ProxyItem? proxyItem;
 
   @override
@@ -183,7 +132,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
                                     },
                                   ),
                                 ),
-                                if (controller != null) ValueListenableBuilder<VlcPlayerValue>(
+                                if (controller != null) ValueListenableBuilder<neo.VideoPlayerValue>(
                                   valueListenable: controller!,
                                   builder: (context, value, child) {
                                     return IconButton(
@@ -238,7 +187,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
                   );
                 }
               },
-              child: _VideoInner(
+              child: VideoInner(
                 controller: controller,
                 onTap: () {
                   VideoSheetOpenNotification().dispatch(context);
@@ -284,19 +233,24 @@ class _VideoPlayerState extends State<VideoPlayer> {
     if (dataSource != null) {
       proxyItem = ProxyServer.instance.get(dataSource.src, headers: dataSource.headers);
       proxyItem!.retain();
-      controller = VlcPlayerController.network(
-        proxyItem!.localServerUri.toString(),
+      controller = neo.VideoPlayerController(
+        proxyItem!.localServerUri,
       );
       controller!.addListener(_update);
       _waitForPlaying = true;
+      controller!.play();
     }
   }
 
   @override
   void dispose() {
     super.dispose();
-    controller?.dispose();
+    _clearVideo();
     proxyItem?.release();
+  }
+
+  void _clearVideo() async {
+    controller?.dispose();
   }
 
   void _update() {

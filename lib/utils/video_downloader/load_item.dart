@@ -58,9 +58,8 @@ class LoadItem {
     RequestItem item = _requestItemBuilder();
     currentRequest = item;
     if (item.method.toUpperCase() == "HEAD") {
-      print("REQ: ${item.url}");
       var response = await item.getResponse();
-      print("headers: ${response.headers}");
+      // print("headers: ${response.headers}");
       Map<String, String> headers = {};
       response.headers.forEach((name, values) => headers[name.toLowerCase()] = values.join(','));
       String json = jsonEncode(headers);
@@ -72,10 +71,8 @@ class LoadItem {
     } else {
       item.onComplete = _onComplete;
       item.onFailed = _onFailed;
-      print("URL: ${item.url}");
       var response = await item.getResponse();
-      print("headers: ${response.headers}");
-      print("statusCode: ${response.statusCode}");
+      // print("headers: ${response.headers}");
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
         int contentLength = int.tryParse(response.headers.value(Headers.contentLengthHeader) ?? "0") ?? 0;
         if (contentLength > 0) {

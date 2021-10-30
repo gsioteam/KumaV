@@ -293,7 +293,7 @@ Register register = Register(() {
   });
   XmlLayout.registerEnum(DragStartBehavior.values);
   XmlLayout.register("Text", (node, key) {
-    return Text(((node.s<String?>("arg:0") ?? node.t<String>())),
+    return Text(((node.s<String?>("arg:0") ?? node.t<String>())!),
         key: key,
         style: node.s<TextStyle>("style"),
         strutStyle: node.s<StrutStyle>("strutStyle"),
@@ -854,7 +854,7 @@ Register register = Register(() {
         filterQuality: (node.s<FilterQuality>("filterQuality"))!);
   });
   XmlLayout.register("Image.network", (node, key) {
-    return Image.network(((node.s<String?>("arg:0") ?? node.t<String>())),
+    return Image.network(((node.s<String?>("arg:0") ?? node.t<String>())!),
         key: key,
         scale: (node.s<double>("scale", 1.0))!,
         frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(
@@ -910,7 +910,7 @@ Register register = Register(() {
         cacheHeight: node.s<int>("cacheHeight"));
   });
   XmlLayout.register("Image.asset", (node, key) {
-    return Image.asset(((node.s<String?>("arg:0") ?? node.t<String>())),
+    return Image.asset(((node.s<String?>("arg:0") ?? node.t<String>())!),
         key: key,
         bundle: node.s<AssetBundle>("bundle"),
         frameBuilder: node.s<Widget Function(BuildContext, Widget, int?, bool)>(

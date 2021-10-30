@@ -2,6 +2,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:kumav/extensions/js_utils.dart';
+import 'package:kumav/utils/get_ready.dart';
+import 'package:kumav/utils/plugin.dart';
+import 'package:sembast/sembast.dart';
 
 class ProcessorItem {
   String title;
@@ -127,6 +130,7 @@ class ProcessorValue {
 }
 
 class Processor extends ValueNotifier<ProcessorValue> {
+  static StoreRef _cacheRecord = StoreRef("video_cache");
 
   Processor(String key) : super(ProcessorValue(
     key: key
@@ -143,6 +147,22 @@ class Processor extends ValueNotifier<ProcessorValue> {
 
   void setValue(JsValue jsValue) {
     value = value.copyWithData(jsValue);
+  }
+
+  Future<dynamic> loadCache(Plugin plugin) async {
+    var data = await _cacheRecord.record(value.key).get(plugin.database);
+    if (data != null)
+      value = value.copyWithMap(data["data"]);
+    return data;
+  }
+
+  Future<void> saveCache(Plugin plugin, Map data) async {
+    data["data"] = value.toData();
+    await _cacheRecord.record(value.key).put(
+      plugin.database,
+      data,
+      merge: true,
+    );
   }
 }
 

@@ -1,4 +1,7 @@
 
+abstract class ToData {
+  dynamic toData();
+}
 
 class ItemData {
   String key;
@@ -12,20 +15,23 @@ class ItemData {
     required this.pluginID,
     required this.date,
     this.data,
+    this.customer,
   });
 
   ItemData.fromData(Map data) :
         key = data["key"],
         data = data["data"],
         pluginID = data["pluginID"],
-        date = data["date"];
+        date = data["date"],
+        customer = data["customer"];
 
   Map toData() {
     return {
       "key": key,
-      "data": data,
+      "data": (data is ToData) ? data.toData() : data,
       "pluginID": pluginID,
       "date": date,
+      "customer": (customer is ToData) ? customer.toData() : customer,
     };
   }
 

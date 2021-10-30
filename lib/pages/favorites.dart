@@ -5,10 +5,73 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dapp/widgets/dimage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/pages/video.dart';
+import 'package:kumav/utils/favorites.dart';
 import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
+import 'package:kumav/widgets/hint_point.dart';
 
 import '../localizations/localizations.dart';
+
+class FavoriteCell extends StatefulWidget {
+  final FavoriteItem item;
+  final VoidCallback? onTap;
+
+  FavoriteCell({
+    Key? key,
+    required this.item,
+    this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => _FavoriteCellState();
+}
+
+class _FavoriteCellState extends State<FavoriteCell> {
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(widget.item.title),
+      subtitle: Text(widget.item.subtitle),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          DImage(
+            src: widget.item.picture,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+          ),
+          if (widget.item.hasNew) Positioned(
+            right: -2,
+            top: -2,
+            child: HintPoint(
+              size: 12,
+            ),
+          ),
+        ],
+      ),
+      onTap: widget.onTap,
+      tileColor: Theme.of(context).canvasColor,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.item.addListener(_onUpdate);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    widget.item.removeListener(_onUpdate);
+  }
+
+  void _onUpdate() {
+    setState(() {
+    });
+  }
+}
 
 class Favorites extends StatefulWidget {
 
@@ -30,15 +93,8 @@ class _FavoritesState extends State<Favorites> {
           var item = Manager.instance.favorites.items[index];
           return Dismissible(
             key: ValueKey(item.key),
-            child: ListTile(
-              title: Text(item.title),
-              subtitle: Text(item.subtitle),
-              leading: DImage(
-                src: item.picture,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-              ),
+            child: FavoriteCell(
+              item: item,
               onTap: () async {
                 Plugin plugin = await Manager.instance.plugins[item.pluginID];
                 if (plugin.isValidate) {
@@ -51,7 +107,6 @@ class _FavoritesState extends State<Favorites> {
                   Fluttertoast.showToast(msg: kt('no_plugin'));
                 }
               },
-              tileColor: Theme.of(context).canvasColor,
             ),
             confirmDismiss: (_) async {
               return showDialog<bool>(

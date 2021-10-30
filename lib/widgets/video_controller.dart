@@ -3,17 +3,19 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_vlc_player/flutter_vlc_player.dart';
+import 'package:kumav/widgets/bordered_menu_button.dart';
+import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:kumav/pages/fullscreen.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 import 'package:kumav/widgets/video_sheet.dart';
 
+import 'slider_bar.dart';
 import 'video_player.dart';
 
 class VideoController extends StatefulWidget {
-  final VlcPlayerController? controller;
+  final neo.VideoPlayerController? controller;
   final ProxyItem? proxyItem;
   final List<VideoResolution> resolutions;
   final void Function(int index)? onSelectResolution;
@@ -32,15 +34,20 @@ class VideoController extends StatefulWidget {
   State<StatefulWidget> createState() => VideoControllerState();
 }
 
+enum PlaySpeed {
+  x0_5,
+  x1,
+  x1_5,
+  x2,
+}
+
 class VideoControllerState extends State<VideoController> {
 
   bool isDisplay = true;
   bool _visible = true;
   ValueNotifier<int> _speed = ValueNotifier(0);
   Timer? timer;
-
-  Duration _oldPosition = Duration.zero;
-  GlobalKey _resolutionKey = GlobalKey();
+  PlaySpeed _playSpeed = PlaySpeed.x1;
 
   @override
   Widget build(BuildContext context) {
@@ -104,10 +111,10 @@ class VideoControllerState extends State<VideoController> {
                             icon: Icon(Icons.skip_previous),
                           ),
                           Padding(padding: EdgeInsets.only(left: 10)),
-                          ValueListenableBuilder<VlcPlayerValue>(
+                          ValueListenableBuilder<neo.VideoPlayerValue>(
                             valueListenable: widget.controller!,
                             builder: (context, value, child) {
-                              if (isBuffering) {
+                              if (value.isBuffering) {
                                 return SizedBox(
                                   width: 52,
                                   height: 52,
@@ -126,7 +133,7 @@ class VideoControllerState extends State<VideoController> {
                                       widget.controller!.pause();
                                     } else {
                                       widget.controller!.play();
-                                      _oldTime = DateTime.now();
+                                      // _oldTime = DateTime.now();
                                     }
                                     resetTimer();
                                   },
@@ -204,39 +211,85 @@ class VideoControllerState extends State<VideoController> {
                       bottom: 4,
                       left: 8,
                       right: 8,
-                      child: ValueListenableBuilder<VlcPlayerValue>(
-                        valueListenable: widget.controller!,
-                        builder: (context, value, child) {
-                          return ProgressBar(
-                            progress: value.position,
-                            total: value.duration,
-                            buffered: buffered(),
-                            baseBarColor: Colors.white24,
-                            bufferedBarColor: Colors.white38,
-                            timeLabelType: TimeLabelType.totalTime,
-                            timeLabelLocation: TimeLabelLocation.above,
-                            timeLabelTextStyle: TextStyle(
-                                color: Colors.white
-                            ),
-                            thumbRadius: 6,
-                            barHeight: 3,
-                            onSeek: (duration) async {
-                              await widget.controller!.seekTo(duration);
-                              _oldTime = DateTime.fromMillisecondsSinceEpoch(0);
-                              _oldPosition = duration;
-                              widget.controller!.value = widget.controller!.value.copyWith(
-                                position: duration,
-                              );
-                            },
-                            onDragStart: (_) {
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SliderBar(
+                            controller: widget.controller!,
+                            proxyItem: widget.proxyItem!,
+                            onBeginDrag: () {
                               stopTimer();
                             },
-                            onDragEnd: () {
+                            onEndDrag: () {
                               resetTimer();
                             },
-                          );
-                        },
-                      ),
+                          ),
+                          Row(
+                            children: [
+                              BorderedMenuButton<PlaySpeed>(
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      WidgetSpan(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(right: 2),
+                                          child: Icon(Icons.speed, size: 12,),
+                                        ),
+                                        alignment: PlaceholderAlignment.middle,
+                                      ),
+                                      TextSpan(text: textFromSpeed(_playSpeed))
+                                    ],
+                                  )
+                                ),
+                                items: [
+                                  PopupMenuItem(
+                                    child: Text(textFromSpeed(PlaySpeed.x0_5)),
+                                    value: PlaySpeed.x0_5,
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text(textFromSpeed(PlaySpeed.x1)),
+                                    value: PlaySpeed.x1,
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text(textFromSpeed(PlaySpeed.x1_5)),
+                                    value: PlaySpeed.x1_5,
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text(textFromSpeed(PlaySpeed.x2)),
+                                    value: PlaySpeed.x2,
+                                  ),
+                                ],
+                                onSelected: (speed) {
+                                  if (_playSpeed != speed) {
+                                    setState(() {
+                                      _playSpeed = speed;
+                                      double sp;
+                                      switch (_playSpeed) {
+                                        case PlaySpeed.x0_5: sp = 0.5; break;
+                                        case PlaySpeed.x1: sp = 1; break;
+                                        case PlaySpeed.x1_5: sp = 1.5; break;
+                                        case PlaySpeed.x2: sp = 2; break;
+                                      }
+                                      widget.controller?.setPlaybackSpeed(sp);
+                                    });
+                                  }
+                                },
+                              ),
+                              Expanded(child: Container()),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                                    return Fullscreen(
+                                      controller: widget.controller!,
+                                    );
+                                  }));
+                                },
+                                icon: Icon(Icons.fullscreen)
+                              )
+                            ],
+                          ),
+                        ],
+                      )
                     )
                   ],
                 ),
@@ -249,7 +302,7 @@ class VideoControllerState extends State<VideoController> {
                 },
               ),
             ),
-            if (widget.controller != null) ValueListenableBuilder<VlcPlayerValue>(
+            if (widget.controller != null) ValueListenableBuilder<neo.VideoPlayerValue>(
                 valueListenable: widget.controller!,
                 builder: (context, value, child) {
                   return Visibility(
@@ -275,7 +328,7 @@ class VideoControllerState extends State<VideoController> {
                                     ),
                                   ),
                                   Padding(padding: EdgeInsets.only(top: 10)),
-                                  Text(value.errorDescription),
+                                  Text(value.errorDescription??""),
                                 ],
                               ),
                             )
@@ -293,25 +346,14 @@ class VideoControllerState extends State<VideoController> {
   }
 
   bool _disposed = false;
-  DateTime? _oldTime;
 
-  bool get isBuffering {
-    var value = widget.controller!.value;
-    if (value.duration == Duration.zero) return true;
-    if (value.isPlaying) {
-      if (value.position == _oldPosition) {
-        var now = DateTime.now();
-        if (_oldTime == null) {
-          _oldTime = now;
-        } else if (now.difference(_oldTime!).inMilliseconds > 1100) {
-          return true;
-        }
-      } else {
-        _oldPosition = value.position;
-        _oldTime = DateTime.now();
-      }
+  String textFromSpeed(PlaySpeed speed) {
+    switch (speed) {
+      case PlaySpeed.x0_5: return "0.5x";
+      case PlaySpeed.x1: return "1x";
+      case PlaySpeed.x1_5: return "1.5x";
+      case PlaySpeed.x2: return "2x";
     }
-    return false;
   }
 
   @override
@@ -398,63 +440,37 @@ class VideoControllerState extends State<VideoController> {
     } else {
       title = "";
     }
-    return OutlinedButton(
-      key: _resolutionKey,
+
+    List<PopupMenuEntry<int>> items = [];
+    for (int i = 0, t = widget.resolutions.length; i < t; ++i) {
+      var resolution = widget.resolutions[i];
+      items.add(PopupMenuItem(
+        child: Text(resolution.title),
+        value: i,
+      ));
+    }
+    return BorderedMenuButton<int>(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 14,
-            ),
           ),
           Icon(Icons.arrow_drop_down),
         ],
       ),
-      style: OutlinedButton.styleFrom(
-        primary: Colors.white,
-        side: BorderSide(
-          color: Colors.white,
-        ),
-        minimumSize: Size.zero,
-        padding: EdgeInsets.only(
-          left: 10,
-        ),
-      ),
-      onPressed: () async {
-        var renderObject = _resolutionKey.currentContext?.findRenderObject();
-        var transform = renderObject?.getTransformTo(null);
-        if (transform != null) {
-          var rect = renderObject!.semanticBounds;
-          var leftTop = rect.topLeft;
-          var point = transform.applyToVector3Array([leftTop.dx, leftTop.dy, 0]);
-
-          List<PopupMenuEntry<int>> items = [];
-          for (int i = 0, t = widget.resolutions.length; i < t; ++i) {
-            var resolution = widget.resolutions[i];
-            items.add(PopupMenuItem(
-              child: Text(resolution.title),
-              value: i,
-            ));
-          }
-          stopTimer();
-          var index = await showMenu(
-            context: context,
-            position: RelativeRect.fromLTRB(
-              point[0],
-              point[1],
-              point[0] + rect.width,
-              point[1] + rect.height,
-            ),
-            items: items,
-          );
-          resetTimer();
-          if (index != null && index != widget.currentSelect) {
-            widget.onSelectResolution?.call(index);
-          }
+      items: items,
+      onPopup: stopTimer,
+      onCanceled: resetTimer,
+      onSelected: (index) {
+        resetTimer();
+        if (index != widget.currentSelect) {
+          widget.onSelectResolution?.call(index);
         }
       },
+      padding: EdgeInsets.only(
+        left: 10,
+      ),
     );
   }
 

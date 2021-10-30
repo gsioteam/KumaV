@@ -1,10 +1,13 @@
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/extensions/js_processor.dart';
+import 'package:kumav/utils/favorites.dart';
 import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/widgets/player_wrap.dart';
@@ -91,7 +94,6 @@ class _VideoState extends State<Video> {
 
   bool loading = false;
 
-  static StoreRef _cacheRecord = StoreRef("video_cache");
 
   @override
   Widget build(BuildContext context) {
@@ -125,85 +127,88 @@ class _VideoState extends State<Video> {
                 valueListenable: _processor,
                 builder: (context, value, child) {
                   return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  value.title,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                    child: Material(
+                      color: Theme.of(context).canvasColor,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    value.title,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              ValueListenableBuilder<bool>(
-                                  valueListenable: downloadController,
-                                  builder: (context, value, child) {
-                                    return IconButton(
-                                      icon: Icon(Icons.file_download),
-                                      onPressed: value ? () {
+                                ValueListenableBuilder<bool>(
+                                    valueListenable: downloadController,
+                                    builder: (context, value, child) {
+                                      return IconButton(
+                                        icon: Icon(Icons.file_download),
+                                        onPressed: value ? () {
 
-                                      } : null,
-                                      color: theme.primaryColor,
-                                      disabledColor: theme.disabledColor,
-                                    );
-                                  }
-                              ),
-                              Manager.instance.favorites.contains(
-                                key: _videoInfo.key,
-                                plugin: _videoInfo.plugin,
-                              ) ? IconButton(
-                                icon: Icon(
-                                  Icons.favorite,
+                                        } : null,
+                                        color: theme.primaryColor,
+                                        disabledColor: theme.disabledColor,
+                                      );
+                                    }
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    Manager.instance.favorites.remove(
-                                      key: _videoInfo.key,
-                                      plugin: _videoInfo.plugin
-                                    );
-                                  });
-                                },
-                                color: Colors.red,
-                              ) : IconButton(
-                                icon: Icon(Icons.favorite_border),
-                                onPressed: () {
-                                  setState(() {
-                                    Manager.instance.favorites.add(
-                                      key: _videoInfo.key,
-                                      plugin: _videoInfo.plugin,
-                                      data: _videoInfo.data,
-                                    );
-                                  });
-                                },
-                                color: theme.disabledColor,
-                              ),
-                            ],
-                          ),
-                          if (value.subtitle.isNotEmpty) Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 8,
+                                Manager.instance.favorites.contains(
+                                  key: _videoInfo.key,
+                                  plugin: _videoInfo.plugin,
+                                ) ? IconButton(
+                                  icon: Icon(
+                                    Icons.favorite,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      Manager.instance.favorites.remove(
+                                          key: _videoInfo.key,
+                                          plugin: _videoInfo.plugin
+                                      );
+                                    });
+                                  },
+                                  color: Colors.red,
+                                ) : IconButton(
+                                  icon: Icon(Icons.favorite_border),
+                                  onPressed: () async {
+                                    setState(() {
+                                      _favoriteCheck(Manager.instance.favorites.add(
+                                        key: _videoInfo.key,
+                                        plugin: _videoInfo.plugin,
+                                        data: _videoInfo.data,
+                                      ));
+                                    });
+                                  },
+                                  color: theme.disabledColor,
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              value.subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context).disabledColor,
+                            if (value.subtitle.isNotEmpty) Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                value.subtitle,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).disabledColor,
+                                ),
                               ),
                             ),
-                          ),
-                          Text(value.description),
-                        ],
+                            Text(value.description),
+                          ],
+                        ),
                       ),
-                    ),
+                    )
                   );
                 },
               ),
@@ -222,7 +227,7 @@ class _VideoState extends State<Video> {
                         ),
                       ),
                       padding: EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 12,
                       ),
                       child: Center(
                         child: Row(
@@ -278,7 +283,7 @@ class _VideoState extends State<Video> {
                     color: Theme.of(context).canvasColor,
                   ),
                   key: null,
-                  size: 36,
+                  size: 48,
                 ),
                 pinned: true,
               ),
@@ -300,6 +305,7 @@ class _VideoState extends State<Video> {
                             _currentItem = item;
                           });
                         },
+                        tileColor: Theme.of(context).canvasColor,
                       );
                     },
                         childCount: sorted.length
@@ -321,7 +327,6 @@ class _VideoState extends State<Video> {
   void initState() {
     super.initState();
     controller = ScrollController();
-    controller.addListener(_onScroll);
 
     downloadController = DownloadController();
   }
@@ -346,34 +351,25 @@ class _VideoState extends State<Video> {
       data: _videoInfo.data,
       plugin: _videoInfo.plugin,
     );
+    Manager.instance.favorites.clearNew(
+      key: _videoInfo.key,
+      plugin: _videoInfo.plugin,
+    );
     _processor = Processor(_videoInfo.key);
     _processor.addListener(_update);
-    var script = _videoInfo.plugin.script;
-    if (script != null) {
-      String processorStr = _videoInfo.plugin.information!.processor;
-      if (processorStr[0] != '/') {
-        processorStr = "/$processorStr";
-      }
-      JsValue clazz = script.run(processorStr + ".js");
-      if (clazz.isConstructor) {
-        _jsProcessor = script.bind(_processor, classFunc: clazz)..retain();
-        _beginLoad();
-      } else {
-        print("Can not load processor ($processorStr).");
-      }
+    try {
+      _jsProcessor = _videoInfo.plugin.makeProcessor(_processor);
+      _beginLoad();
+    } catch (e) {
+      Fluttertoast.showToast(msg: kt(e.toString()));
     }
   }
 
-  void _onScroll() {
-
-  }
-
   void _beginLoad() async {
-    var data = await _cacheRecord.record(_videoInfo.key).get(_videoInfo.plugin.database);
+    var data = await _processor.loadCache(_videoInfo.plugin);
     int _oldTime = 0;
     if (data != null) {
       _oldTime = data["time"];
-      _processor.value = _processor.value.copyWithMap(data["data"]);
       _sortType = _SortType.values[data['sort_type'] ?? 0];
     }
     if (DateTime.now().millisecondsSinceEpoch - _oldTime > 3600 * 1000) {
@@ -391,20 +387,21 @@ class _VideoState extends State<Video> {
     JsValue promise = _jsProcessor?.invoke("load", [_videoInfo.data]);
     await promise.asFuture;
 
-    await _cacheRecord.record(_videoInfo.key).put(
-      _videoInfo.plugin.database,
-      {
-        "time": DateTime.now().millisecondsSinceEpoch,
-        "data": _processor.value.toData(),
-        "sort_type": _sortType.index,
-      },
-      merge: false,
-    );
+    await _processor.saveCache(_videoInfo.plugin, {
+      "time": DateTime.now().millisecondsSinceEpoch,
+      "sort_type": _sortType.index,
+    });
     loading = false;
   }
 
+  List<VoidCallback> _onDataLoaded = [];
+
   void _update() {
     if (_currentItem == null && _processor.value.items.isNotEmpty) {
+      for (var cb in _onDataLoaded) {
+        cb();
+      }
+      _onDataLoaded.clear();
       setState(() {
         _currentItem = sorted[0];
       });
@@ -428,5 +425,28 @@ class _VideoState extends State<Video> {
       }
     }
     return _sorted;
+  }
+
+  void _favoriteCheck(Future<FavoriteItem> future) async {
+    var item = await future;
+    if (_processor.value.items.isEmpty) {
+      _onDataLoaded.add(() {
+        var length = _processor.value.items.length;
+        if (length > 0) {
+          var last = _processor.value.items.last;
+          item.itemsLength = length;
+          item.lastKey = last.key;
+          item.lastTitle = last.title;
+          item.update();
+        }
+      });
+    } else {
+      var length = _processor.value.items.length;
+      var last = _processor.value.items.last;
+      item.itemsLength = length;
+      item.lastKey = last.key;
+      item.lastTitle = last.title;
+      item.update();
+    }
   }
 }

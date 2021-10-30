@@ -87,6 +87,7 @@ class RequestItem {
 
   Future<void> _start() async {
     Uri uri = Uri.parse(url);
+    print("[req:$method]$url");
     dio = Dio(BaseOptions(
       headers: headers,
       responseType: ResponseType.stream
@@ -95,7 +96,9 @@ class RequestItem {
       _response = await dio.requestUri<ResponseBody>(
           uri
       );
+      print("[res:${_response!.statusCode}]$url");
     } catch (e) {
+      print("[error]$e");
       _response = null;
       _receiveResponse();
       _failed();

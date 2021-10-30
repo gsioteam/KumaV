@@ -8,17 +8,22 @@ import 'package:flutter_dapp/utils/node_item.dart';
 import 'package:flutter_dapp/widgets/dimage.dart';
 import 'package:flutter_dapp/widgets/dlistview.dart';
 import 'package:flutter_dapp/widgets/drefresh.dart';
+import 'package:flutter_dapp/widgets/input.dart';
+import 'package:flutter_dapp/widgets/view.dart';
 import 'package:js_script/js_script.dart';
 import 'package:xml_layout/register.dart';
 import 'package:xml_layout/xml_layout.dart';
 import 'package:xml_layout/types/colors.dart' as colors;
+import 'package:xml_layout/types/icons.dart' as icons;
 import 'package:path/path.dart' as path;
 
+import 'widgets/dappbar.dart';
 import 'widgets/dbutton.dart';
 import 'widgets/tab_container.dart';
 
 Register register = Register(() {
   colors.register();
+  icons.register();
   XmlLayout.register("scaffold", (node, key) {
     return Scaffold(
       key: key,
@@ -83,8 +88,8 @@ Register register = Register(() {
     return DButton(
       key: key,
       child: node.child<Widget>()!,
-      onPressed: node.s<String>("onPressed"),
-      onLongPress: node.s<String>("onLongPress"),
+      onPressed: node.s<VoidCallback>("onPressed"),
+      onLongPress: node.s<VoidCallback>("onLongPress"),
       type: node.s<DButtonType>("type", DButtonType.elevated)!,
     );
   });
@@ -134,38 +139,19 @@ Register register = Register(() {
     return null;
   });
   XmlLayout.register("AppBar", (node, key) {
-    return AppBar(
+    return DAppBar(
       key: key,
+      child: node.child<Widget>(),
       leading: node.s<Widget>("leading"),
-      automaticallyImplyLeading:
-      (node.s<bool>("automaticallyImplyLeading", true))!,
-      title: node.s<Widget>("title"),
       actions: node.array<Widget>("actions"),
-      flexibleSpace: node.s<Widget>("flexibleSpace"),
       bottom: node.s<PreferredSizeWidget>("bottom"),
-      elevation: node.s<double>("elevation"),
-      shadowColor: node.s<Color>("shadowColor"),
-      shape: node.s<ShapeBorder>("shape"),
-      backgroundColor: node.s<Color>("backgroundColor"),
-      foregroundColor: node.s<Color>("foregroundColor"),
       brightness: node.s<Brightness>("brightness"),
-      iconTheme: node.s<IconThemeData>("iconTheme"),
-      actionsIconTheme: node.s<IconThemeData>("actionsIconTheme"),
-      textTheme: node.s<TextTheme>("textTheme"),
-      primary: (node.s<bool>("primary", true))!,
-      centerTitle: node.s<bool>("centerTitle"),
-      excludeHeaderSemantics:
-      (node.s<bool>("excludeHeaderSemantics", false))!,
-      titleSpacing: node.s<double>("titleSpacing"),
-      toolbarOpacity: (node.s<double>("toolbarOpacity", 1.0))!,
-      bottomOpacity: (node.s<double>("bottomOpacity", 1.0))!,
-      toolbarHeight: node.s<double>("toolbarHeight"),
-      leadingWidth: node.s<double>("leadingWidth"),
-      backwardsCompatibility: node.s<bool>("backwardsCompatibility"),
-      toolbarTextStyle: node.s<TextStyle>("toolbarTextStyle"),
-      titleTextStyle: node.s<TextStyle>("titleTextStyle"),
-      systemOverlayStyle: node.s<SystemUiOverlayStyle>("systemOverlayStyle"));
+      background: node.s<Color>("background"),
+      color: node.s<Color>("color"),
+      height: node.s<double>("height", 56)!,
+    );
   });
+  XmlLayout.registerEnum(Brightness.values);
   XmlLayout.registerEnum(DragStartBehavior.values);
   XmlLayout.register("list-view", (node, key) {
     String? item = node.s<String>('item');
@@ -216,9 +202,9 @@ Register register = Register(() {
   XmlLayout.register("img", imgBuilder);
   XmlLayout.register("image", imgBuilder);
   XmlLayout.register("callback", (node, key) {
-    return () {
+    return ([a0, a1, a2, a3, a4]) {
       var data = DWidget.of(node.context);
-      data!.controller.invoke(node.s<String>("function")!, node.s<List>("args", [])!);
+      data!.controller.invoke(node.s<String>("function")!, node.s<List>("args", [a0, a1, a2, a3, a4])!);
     };
   });
   XmlLayout.registerInlineMethod("length", (method, status) {
@@ -297,10 +283,75 @@ Register register = Register(() {
   XmlLayout.register('item', (node, key) {
     return NodeItem(node);
   });
+  XmlLayout.register("input", (node, key) {
+    return Input(
+      key: key,
+      placeholder: node.s<String>("placeholder"),
+      text: node.s<String>("text", "")!,
+      autofocus: node.s<bool>("autofocus", false)!,
+      onChange: node.s<InputChangedCallback>("onChange"),
+      onSubmit: node.s<InputSubmitCallback>("onSubmit"),
+      onFocus: node.s<VoidCallback>("onFocus"),
+      onBlur: node.s<VoidCallback>("onBlur"),
+      style: node.s<TextStyle>("style"),
+    );
+  });
+  XmlLayout.register("icon", (node, key) {
+    return Icon(
+      node.child<IconData>(),
+      key: key,
+      size: node.s<double>("size"),
+      color: node.s<Color>("color"),
+    );
+  });
+  XmlLayout.register("textstyle", (node, key) {
+    return TextStyle(
+      color: node.s<Color>("color"),
+      backgroundColor: node.s<Color>("background"),
+      fontSize: node.s<double>("size"),
+    );
+  });
+  XmlLayout.register("stack", (node, key) {
+    return Stack(
+      key: key,
+      alignment: node.s<Alignment>("alignment", Alignment.topLeft)!,
+      children: node.children<Widget>(),
+      textDirection: node.s<TextDirection>("textDirection"),
+      fit: node.s<StackFit>("fit", StackFit.loose)!,
+      clipBehavior: node.s<Clip>("clip", Clip.hardEdge)!,
+    );
+  });
+  XmlLayout.registerInline(Alignment, "topLeft", true, (node, method) => Alignment.topLeft);
+  XmlLayout.registerInline(Alignment, "topCenter", true, (node, method) => Alignment.topCenter);
+  XmlLayout.registerInline(Alignment, "topRight", true, (node, method) => Alignment.topRight);
+  XmlLayout.registerInline(Alignment, "centerLeft", true, (node, method) => Alignment.centerLeft);
+  XmlLayout.registerInline(Alignment, "center", true, (node, method) => Alignment.center);
+  XmlLayout.registerInline(Alignment, "centerRight", true, (node, method) => Alignment.centerRight);
+  XmlLayout.registerInline(Alignment, "bottomLeft", true, (node, method) => Alignment.bottomLeft);
+  XmlLayout.registerInline(Alignment, "bottomCenter", true, (node, method) => Alignment.bottomCenter);
+  XmlLayout.registerInline(Alignment, "bottomRight", true, (node, method) => Alignment.bottomRight);
+  XmlLayout.registerEnum(StackFit.values);
+  XmlLayout.registerEnum(Clip.values);
+  XmlLayout.register("view", (node, key) {
+    return View(
+      key: key,
+      width: node.s<double>("width"),
+      height: node.s<double>("height"),
+      color: node.s<Color>("color"),
+      child: node.child<Widget>(),
+    );
+  });
   XmlLayout.registerInlineMethod("isNull", (method, status) {
     return method[0] == null;
   });
   XmlLayout.registerInlineMethod("isNotNull", (method, status) {
     return method[0] != null;
+  });
+  XmlLayout.registerInlineMethod("switch", (method, status) {
+    if (method[0] == true) {
+      return method[1];
+    } else {
+      return method[2];
+    }
   });
 });

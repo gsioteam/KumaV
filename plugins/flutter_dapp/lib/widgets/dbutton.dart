@@ -13,8 +13,8 @@ enum DButtonType {
 class DButton extends StatelessWidget {
 
   final Widget child;
-  final String? onPressed;
-  final String? onLongPress;
+  final VoidCallback? onPressed;
+  final VoidCallback? onLongPress;
   final DButtonType type;
 
   DButton({
@@ -29,39 +29,31 @@ class DButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    VoidCallback? onPressedCallback = onPressed == null ? null : () {
-      var controller = DWidget.of(context)?.controller;
-      controller?.invoke(onPressed!);
-    };
-    VoidCallback? onLongPressCallback = onLongPress == null ? null : () {
-      var controller = DWidget.of(context)?.controller;
-      controller?.invoke(onLongPress!);
-    };
     switch (type) {
       case DButtonType.elevated: {
         return ElevatedButton(
-            onPressed: onPressedCallback,
-            onLongPress: onLongPressCallback,
+            onPressed: onPressed,
+            onLongPress: onLongPress,
             child: child
         );
       }
       case DButtonType.icon: {
         return IconButton(
           icon: child,
-          onPressed: onPressedCallback,
+          onPressed: onPressed,
         );
       }
       case DButtonType.material: {
         return MaterialButton(
           child: child,
-          onPressed: onPressedCallback,
-          onLongPress: onLongPressCallback,
+          onPressed: onPressed,
+          onLongPress: onLongPress,
         );
       }
       case DButtonType.text: {
         return TextButton(
-          onPressed: onPressedCallback,
-          onLongPress: onLongPressCallback,
+          onPressed: onPressed,
+          onLongPress: onLongPress,
           child: child
         );
       }

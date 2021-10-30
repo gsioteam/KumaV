@@ -43,6 +43,7 @@ class Histories extends GetReady with ChangeNotifier {
       itemData.key = key;
       itemData.data = data;
       itemData.pluginID = plugin.id;
+      itemData.date = DateTime.now().millisecondsSinceEpoch;
       await _historiesStore.record(item.key).update(database, itemData.toData());
     } else {
       var itemData = ItemData(
@@ -65,7 +66,7 @@ class Histories extends GetReady with ChangeNotifier {
   }) async {
     var data = await _historiesStore.find(database, finder: Finder(
       sortOrders: [
-        SortOrder("date", false),
+        SortOrder("date"),
       ],
       offset: page * limit,
       limit: limit,

@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/pages/plugins.dart';
+import 'package:kumav/pages/ext_page.dart';
 import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/image_providers.dart';
 import 'package:kumav/utils/plugin.dart';
+import 'package:kumav/utils/search_page_route.dart';
 import 'package:kumav/widgets/no_data.dart';
+
 import '../localizations/localizations.dart';
 
 class Collections extends StatefulWidget {
@@ -27,12 +30,59 @@ const double _LogoSize = 32;
 
 class _CollectionsState extends State<Collections> {
 
+  List<GlobalKey> _keys = [];
+
   @override
   Widget build(BuildContext context) {
+
+    List<Widget> actions = [];
+    var extensions = widget.plugin?.information?.extensions;
+
+    if (extensions != null) {
+      for (int i = 0, t = extensions.length; i < t; ++i) {
+        var extension = extensions[i];
+        if (_keys.length <= i) {
+          _keys.add(GlobalKey());
+        }
+        GlobalKey key = _keys[i];
+        actions.add(IconButton(
+          key: key,
+          icon: Icon(extension.getIconData()),
+          onPressed: () {
+            RenderObject? object = key.currentContext?.findRenderObject();
+            var translation = object?.getTransformTo(null).getTranslation();
+            var size = object?.semanticBounds.size;
+            Offset center;
+            if (translation != null) {
+              double x = translation.x, y = translation.y;
+              if (size != null) {
+                x += size.width / 2;
+                y += size.height / 2;
+              }
+              center = Offset(x, y);
+            } else {
+              center = Offset(0, 0);
+            }
+
+            Navigator.of(context).push(SearchPageRoute(
+                center: center,
+                builder: (context) {
+                  return ExtPage(
+                    plugin: widget.plugin!,
+                    entry: extension.index,
+                  );
+                }
+            ));
+          },
+        ));
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: _buildLogo(context),
         elevation: widget.plugin?.information?.appBarElevation,
+        actions: actions,
       ),
       body: _buildBody(),
     );
@@ -57,8 +107,8 @@ class _CollectionsState extends State<Collections> {
                         size: 16,
                         shadows: [
                           BoxShadow(
-                              color: Theme.of(context).colorScheme.surface,
-                              offset: Offset(1, 1)
+                            color: Theme.of(context).colorScheme.surface,
+                            offset: Offset(1, 1)
                           ),
                         ]
                     ),
@@ -160,4 +210,5 @@ class _CollectionsState extends State<Collections> {
       },
     );
   }
+
 }

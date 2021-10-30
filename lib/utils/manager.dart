@@ -35,12 +35,12 @@ class Manager extends GetReady {
   Future<void> setup() async {
     var dir = await path_provider.getApplicationSupportDirectory();
     database = await databaseFactoryIo.openDatabase("${dir.path}/storage.db");
+    _plugins = Plugins(database);
+    await _plugins.ready;
     _favorites = Favorites(database);
     await _favorites.ready;
     _downloads = Downloads(database);
     await _downloads.ready;
-    _plugins = Plugins(database);
-    await _plugins.ready;
     _histories = Histories(database);
     await _histories.ready;
   }

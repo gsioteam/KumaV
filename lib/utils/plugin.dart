@@ -14,8 +14,39 @@ import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:dart_git/dart_git.dart';
+import 'package:xml_layout/status.dart';
+import 'package:xml_layout/template.dart';
+import 'package:xml_layout/xml_layout.dart';
+import 'package:xml/xml.dart' as xml;
 
 import 'io_filesystem.dart';
+import 'message_exception.dart';
+
+
+class FakeNodeControl with NodeControl {
+
+}
+
+class Extension {
+  String icon;
+  String index;
+
+  Extension(this.icon, this.index);
+
+  IconData? _iconData;
+
+  IconData? getIconData() {
+    if (_iconData == null) {
+      Status status = Status({});
+      NodeControl nodeControl = FakeNodeControl();
+      Template template = Template(xml.XmlText(icon));
+      var iter = template.generate(status, nodeControl);
+      NodeData node = iter.first;
+      _iconData = node.t<IconData>();
+    }
+    return _iconData;
+  }
+}
 
 class PluginInformation {
   late String name;
@@ -23,11 +54,19 @@ class PluginInformation {
   String? icon;
   late String processor;
   double? appBarElevation;
+  late List<Extension> extensions;
 
   PluginInformation.fromData(dynamic json) {
     name = json['name'];
     index = json['index'];
     icon = json['icon'];
+    extensions = [];
+    var exs = json['extensions'];
+    if (exs != null) {
+      for (var ex in exs) {
+        extensions.add(Extension(ex['icon'], ex['index']));
+      }
+    }
     processor = json['processor'];
     if (json['appbar_elevation'] is num)
       appBarElevation = (json['appbar_elevation'] as num).toDouble();
@@ -126,4 +165,23 @@ class Plugin {
     }
     return _script;
   }
+
+  JsValue makeProcessor(Processor processor) {
+    if (isValidate) {
+      String processorStr = information!.processor;
+      if (processorStr[0] != '/') {
+        processorStr = "/$processorStr";
+      }
+      JsValue clazz = script!.run(processorStr + ".js");
+      if (clazz.isConstructor) {
+        JsValue jsProcessor = script!.bind(processor, classFunc: clazz)..retain();
+        return jsProcessor;
+      } else {
+        throw MessageException("wrong_script");
+      }
+    } else {
+      throw MessageException("no_plugin");
+    }
+  }
+
 }

@@ -152,7 +152,12 @@ class _IndexState extends State<Index> {
   @override
   void initState() {
     super.initState();
-    _oldIndex = selected = HomePages.Home;
+    if (Manager.instance.favorites.items.length == 0) {
+      selected = HomePages.Home;
+    } else {
+      selected = HomePages.Favorites;
+    }
+    _oldIndex = selected;
   }
 
   Widget _buildBody() {

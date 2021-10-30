@@ -20,6 +20,7 @@ import 'pages/index.dart';
 import 'utils/configs.dart';
 import 'utils/plugin.dart';
 import 'utils/video_downloader/proxy_server.dart';
+import 'package:flutter_dapp/template.dart' as temp;
 
 bool _isTest = true;
 
@@ -59,6 +60,7 @@ class MainAppState extends State<MainApp> {
             selectedItemColor: Colors.blue,
             unselectedItemColor: Colors.black54,
             type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
           ),
           scaffoldBackgroundColor: Color(0xffeeeeee),
           appBarTheme: AppBarTheme(
@@ -132,6 +134,7 @@ class SplashScreenState extends State<SplashScreen> {
     await Configs.instance.setup(context);
     await ProxyServer.instance.ready();
     await Manager.instance.ready;
+    temp.register();
 
     if (_isTest) {
       Plugin plugin = Plugin.test(context);

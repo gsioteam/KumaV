@@ -64,5 +64,8 @@
 "clear": "Clear Cache"
 "source": "Source"
 "multi_thread_limit": "Multi-Thread Limit"
+
 no_plugin: The plugin is not installed
 remove_favorite: "Would you like to remove {0}?"
+clear_history: Would you like to clear history?
+wrong_script: Can not recognize script.

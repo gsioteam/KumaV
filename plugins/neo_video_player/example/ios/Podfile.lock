@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - neo_video_player (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - neo_video_player (from `.symlinks/plugins/neo_video_player/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  neo_video_player:
+    :path: ".symlinks/plugins/neo_video_player/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  neo_video_player: 6bb497ff45f3079a4875ea6f259359762477144e
+
+PODFILE CHECKSUM: 8e679eca47255a8ca8067c4c67aab20e64cb974d
+
+COCOAPODS: 1.11.2
