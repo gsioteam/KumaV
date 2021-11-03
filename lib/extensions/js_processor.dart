@@ -11,6 +11,7 @@ class ProcessorItem {
   String subtitle;
   String key;
   dynamic data;
+  bool present = false;
 
   ProcessorItem({
     required this.title,

@@ -2,6 +2,7 @@ library flutter_dapp;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dapp/dwidget.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:js_script/js_script.dart';
 import 'controller.dart';
 import 'file_system.dart';
@@ -55,6 +56,9 @@ class DAppState extends State<DApp> {
     script.addClass(widget.classInfo ?? controllerClass);
     script.addClass(timerClass);
     script.run("/setup.js");
+    script.global["showToast"] = (String msg) {
+      Fluttertoast.showToast(msg: msg);
+    };
     widget.onInitialize?.call(script);
     template.register();
   }

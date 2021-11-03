@@ -5,16 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:glib/glib.dart';
 import 'package:kumav/utils/assets_filesystem.dart';
 import 'package:kumav/utils/manager.dart';
 
 import 'localizations/localizations.dart';
 // import 'favorites_page.dart';
 // import 'download_page.dart';
-import 'package:xml_layout/types/colors.dart' as colors;
-import 'package:xml_layout/types/icons.dart' as icons;
-import 'layout/all.xml_layout.dart' as all;
-import 'package:xml_layout/xml_layout.dart';
+
+import 'package:path_provider/path_provider.dart' as path_provider;
 
 import 'pages/index.dart';
 import 'utils/configs.dart';
@@ -45,13 +44,13 @@ class MainAppState extends State<MainApp> {
     return NotificationListener<LocaleChangedNotification>(
       child: MaterialApp(
         localizationsDelegates: [
-          const KumaLocalizationsDelegate(),
+          const NeoLocalizationsDelegate(),
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         locale: locale,
-        supportedLocales: KumaLocalizationsDelegate.supports.values,
+        supportedLocales: NeoLocalizationsDelegate.supports.values,
         title: 'KumaV',
         theme: themeData.copyWith(
           primaryColorDark: Colors.blueGrey,
@@ -129,6 +128,7 @@ class SplashScreenState extends State<SplashScreen> {
     // if (locale != null) {
     //   LocaleChangedNotification(locale).dispatch(context);
     // }
+    await Glib.setup((await path_provider.getApplicationSupportDirectory()).path);
     await showDisclaimer(context);
     await Plugin.setup();
     await Configs.instance.setup(context);

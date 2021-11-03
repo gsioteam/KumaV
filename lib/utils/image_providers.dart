@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jdenticon_dart/jdenticon_dart.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
@@ -11,29 +13,67 @@ import 'package:crypto/crypto.dart';
 String _generateMd5(String str) =>
     hex.encode(md5.convert(utf8.encode(str)).bytes);
 
-ImageProvider pluginImageProvider(Plugin? plugin) {
+Widget buildIdenticon(String? identifier, {
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.contain,
+}) {
+  return SvgPicture.string(
+    Jdenticon.toSvg(_generateMd5(identifier ?? "null")),
+    width: width,
+    height: height,
+    fit: fit,
+  );
+}
+
+Widget pluginImage(Plugin? plugin, {
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.contain,
+  ImageErrorWidgetBuilder? errorBuilder,
+}) {
   if (plugin?.isValidate == true) {
     if (plugin!.information!.icon != null) {
       String icon = plugin.information!.icon!;
       Uri uri = Uri.parse(icon);
       if (uri.hasScheme) {
-        return CachedNetworkImageProvider(
-          uri.toString(),
+        return CachedNetworkImage(
+          imageUrl: uri.toString(),
+          width: width,
+          height: height,
+          fit: fit,
+          errorWidget: errorBuilder == null ? null : (context, url, error) {
+            return errorBuilder(context, error, null);
+          },
         );
       } else {
         if (icon[0] != '/') {
           icon = '/' + icon;
         }
         if (plugin.fileSystem.exist(icon)) {
-          return MemoryImage(Uint8List.fromList(plugin.fileSystem.readBytes(icon)!));
+          return Image.memory(
+            Uint8List.fromList(plugin.fileSystem.readBytes(icon)!),
+            width: width,
+            height: height,
+            fit: fit,
+          );
         }
       }
     }
     if (plugin.fileSystem.exist("/icon.png")) {
-      return MemoryImage(plugin.fileSystem.readBytes("/icon.png")!);
+      return Image.memory(
+        plugin.fileSystem.readBytes("/icon.png")!,
+        width: width,
+        height: height,
+        fit: fit,
+      );
     }
   }
-  return CachedNetworkImageProvider(
-      "https://www.tinygraphs.com/squares/${_generateMd5(plugin?.id ?? "null")}?theme=bythepool&numcolors=3&size=180&fmt=jpg",
+
+  return buildIdenticon(
+    plugin?.id,
+    width: width,
+    height: height,
+    fit: fit,
   );
 }

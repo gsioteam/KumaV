@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:kumav/widgets/bordered_menu_button.dart';
 import 'package:neo_video_player/neo_video_player.dart' as neo;
@@ -277,12 +278,19 @@ class VideoControllerState extends State<VideoController> {
                               ),
                               Expanded(child: Container()),
                               IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                                onPressed: () async {
+                                  SystemChrome.setPreferredOrientations([
+                                    DeviceOrientation.landscapeLeft,
+                                    DeviceOrientation.landscapeRight
+                                  ]);
+                                  await Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                                     return Fullscreen(
                                       controller: widget.controller!,
                                     );
                                   }));
+                                  SystemChrome.setPreferredOrientations([
+                                    DeviceOrientation.portraitUp
+                                  ]);
                                 },
                                 icon: Icon(Icons.fullscreen)
                               )

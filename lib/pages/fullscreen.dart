@@ -20,13 +20,56 @@ class Fullscreen extends StatefulWidget {
 class _FullscreenState extends State<Fullscreen> {
   @override
   Widget build(BuildContext context) {
+    var padding = MediaQuery.of(context).padding;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("title"),
+      body: Stack(
+        children: [
+          VideoInner(
+            controller: widget.controller,
+          ),
+          Positioned(
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              child: DefaultTextStyle(
+                style: TextStyle(
+                  color: Colors.white
+                ),
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: Colors.white,
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        icon: Icon(Icons.arrow_back_ios),
+                      ),
+                      Expanded(
+                        child: Text("title"),
+                      ),
+                      IconButton(
+                          onPressed: () {
+
+                          },
+                          icon: Icon(Icons.more_vert)
+                      ),
+                    ],
+                  )
+                ),
+              ),
+            ),
+            top: padding.top,
+            left: 0,
+            right: 0,
+            height: 56,
+          ),
+        ],
       ),
-      body: VideoInner(
-        controller: widget.controller,
-      ),
+      backgroundColor: Colors.black,
     );
   }
 }

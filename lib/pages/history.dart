@@ -30,7 +30,7 @@ class _HistoryState extends State<History> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(kt('history')),
+        title: Text(loc('history')),
         actions: [
           IconButton(
             onPressed: () async {
@@ -38,20 +38,20 @@ class _HistoryState extends State<History> {
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                    title: Text(kt('confirm')),
-                    content: Text(kt('clear_history')),
+                    title: Text(loc('confirm')),
+                    content: Text(loc('clear_history')),
                     actions: [
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(false);
                         },
-                        child: Text(kt('no')),
+                        child: Text(loc('no')),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(true);
                         },
-                        child: Text(kt('yes')),
+                        child: Text(loc('yes')),
                       ),
                     ],
                   );
@@ -80,7 +80,7 @@ class _HistoryState extends State<History> {
                 fit: BoxFit.cover,
               ),
               onTap: () async {
-                Plugin plugin = await Manager.instance.plugins[item.pluginID];
+                Plugin plugin = await Manager.instance.plugins.loadPlugin(item.pluginID);
                 if (plugin.isValidate) {
                   OpenVideoNotification(
                     key: item.key,
@@ -88,7 +88,7 @@ class _HistoryState extends State<History> {
                     plugin: plugin,
                   ).dispatch(context);
                 } else {
-                  Fluttertoast.showToast(msg: kt('no_plugin'));
+                  Fluttertoast.showToast(msg: loc('no_plugin'));
                 }
               },
               tileColor: Theme.of(context).canvasColor,

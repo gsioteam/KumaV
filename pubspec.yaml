@@ -32,7 +32,6 @@ dependencies:
   fluttertoast: ^8.0.8
   flutter_dapp:
     path: plugins/flutter_dapp
-  dart_git: ^0.0.2
   sembast: ^3.1.0
   decorated_icon: ^1.2.1
   dio: ^4.0.0
@@ -41,6 +40,14 @@ dependencies:
   neo_video_player:
     path: plugins/neo_video_player
   xml: ^5.1.2
+  yaml: ^3.1.0
+  jdenticon_dart: ^2.0.0
+  flutter_svg: ^0.22.0
+  glib:
+    path: plugins/glib
+  get_version:
+    git: https://github.com/fluttercommunity/get_version.git
+  flutter_picker: ^2.0.2
 
 dev_dependencies:
   flutter_test:
@@ -64,9 +71,9 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - res/logo.png
-    - res/languages/
     - res/test/
     - res/js/
+    - localizations/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

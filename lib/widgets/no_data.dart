@@ -9,7 +9,7 @@ class NoData extends StatelessWidget {
     return Container(
       child: Center(
         child: Text(
-          kt(context, 'no_data'),
+          loc(context, 'no_data'),
           style: TextStyle(
               fontFamily: 'DancingScript',
               fontSize: 24,

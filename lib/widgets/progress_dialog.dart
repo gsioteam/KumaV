@@ -36,7 +36,7 @@ abstract class ProgressItem {
 
 class ProgressDialog extends StatefulWidget {
   final String title;
-  ProgressItem item;
+  final ProgressItem item;
 
   ProgressDialog({
     this.title = "",
@@ -106,7 +106,7 @@ class _ProgressDialogState extends State<ProgressDialog> {
         return MaterialButton(
           textColor: Theme.of(context).primaryColor,
           onPressed: widget.item.cancelable ? onCancel : null,
-          child: Text(kt("cancel")),
+          child: Text(loc("cancel")),
         );
       }
       case _Status.Failed: {
@@ -117,12 +117,12 @@ class _ProgressDialogState extends State<ProgressDialog> {
               MaterialButton(
                 textColor: Theme.of(context).primaryColor,
                 onPressed: onRetry,
-                child: Text(kt("retry")),
+                child: Text(loc("retry")),
               ),
               MaterialButton(
                 textColor: Theme.of(context).primaryColor,
                 onPressed: onCancel,
-                child: Text(kt("cancel")),
+                child: Text(loc("cancel")),
               )
             ],
           );
@@ -130,7 +130,7 @@ class _ProgressDialogState extends State<ProgressDialog> {
           return MaterialButton(
             textColor: Theme.of(context).primaryColor,
             onPressed: onRetry,
-            child: Text(kt("retry")),
+            child: Text(loc("retry")),
           );
         }
       }

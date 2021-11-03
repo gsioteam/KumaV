@@ -3,29 +3,60 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/extensions/js_processor.dart';
+import 'package:kumav/utils/manager.dart';
 
 import 'video_player.dart';
 import 'video_sheet.dart';
+import '../localizations/localizations.dart';
 
 class DownloadController extends ValueNotifier<bool> {
-  VoidCallback? download;
+  void Function(VideoInfo videoInfo)? download;
 
   DownloadController() : super(false);
 }
 
-class Resolution with JsProxy, VideoResolution {
+abstract class Resolution with VideoResolution {
+
+  String get title;
+  String? get url;
+
+  void dispose();
+}
+
+class JsResolution extends Resolution with JsProxy {
   JsValue value;
 
-  String get title => value["title"];
-  String? get url => value["url"];
-
-  Resolution(this.value) {
+  JsResolution(this.value) {
     value.retain();
   }
 
+  @override
   void dispose() {
     value.release();
   }
+
+  @override
+  String get title => value["title"];
+
+  @override
+  String? get url => value["url"];
+}
+
+class PresentResolution extends Resolution {
+
+  String title;
+
+  String url;
+
+  PresentResolution({
+    required this.title,
+    required this.url,
+  });
+
+  @override
+  void dispose() {
+  }
+
 }
 
 class PlayerWrap extends StatefulWidget {
@@ -92,22 +123,33 @@ class _PlayerWrapState extends State<PlayerWrap> {
 
   void getVideo() async {
     var item = widget.item;
-    var processor = widget.processor;
-    if (item != null && processor != null) {
-      JsValue promise = processor.invoke("getVideo", [item.key, item.data]);
-      try {
-        JsValue list =  await promise.asFuture;
-        for (int i = 0, t = list["length"]; i < t; ++i) {
-          resolutions.add(Resolution(list[i]));
+    if (item?.present == true) {
+      resolutions.add(PresentResolution(
+        title: item!.title,
+        url: item.data["videoUrl"]
+      ));
+      setState(() {
+        _current = resolutions[0];
+      });
+      widget.downloadController.value = false;
+    } else {
+      var processor = widget.processor;
+      if (item != null && processor != null) {
+        JsValue promise = processor.invoke("getVideo", [item.key, item.data]);
+        try {
+          JsValue list =  await promise.asFuture;
+          for (int i = 0, t = list["length"]; i < t; ++i) {
+            resolutions.add(JsResolution(list[i]));
+          }
+          if (resolutions.isNotEmpty) {
+            setState(() {
+              _current = resolutions[0];
+            });
+            widget.downloadController.value = true;
+          }
+        } catch (e) {
+          Fluttertoast.showToast(msg: e.toString());
         }
-        if (resolutions.isNotEmpty) {
-          setState(() {
-            _current = resolutions[0];
-          });
-          widget.downloadController.value = true;
-        }
-      } catch (e) {
-        Fluttertoast.showToast(msg: e.toString());
       }
     }
   }
@@ -138,7 +180,26 @@ class _PlayerWrapState extends State<PlayerWrap> {
     resolutions.clear();
   }
 
-  void _onDownload() {
-
+  void _onDownload(VideoInfo videoInfo) async {
+    var resolution = _current;
+    if (resolution is JsResolution && resolution.url != null) {
+      var ret = await Manager.instance.downloads.add(
+        key: videoInfo.key,
+        data: videoInfo.data,
+        plugin: videoInfo.plugin,
+        videoUrl: resolution.url!,
+        title: widget.item!.title,
+        subtitle: widget.item!.subtitle,
+        videoKey: videoInfo.key,
+      );
+      if (ret != null) {
+        await ret.resume();
+        Fluttertoast.showToast(msg: loc("start_download"));
+      } else {
+        Fluttertoast.showToast(msg: loc("already_downloaded"));
+      }
+    } else {
+      Fluttertoast.showToast(msg: loc("no_video_data"));
+    }
   }
 }

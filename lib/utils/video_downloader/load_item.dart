@@ -55,6 +55,7 @@ class LoadItem {
       }
     }
 
+    print("Request ${this.cacheKey}");
     RequestItem item = _requestItemBuilder();
     currentRequest = item;
     if (item.method.toUpperCase() == "HEAD") {

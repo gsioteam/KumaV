@@ -71,13 +71,13 @@ abstract class ProxyItem {
   late String _key;
   late String _entry;
   Map<String, _ProxyData> _files = Map();
-  ProxyServer _server;
+  ProxyServer? _server;
   RequestQueue _queue = RequestQueue();
   Uri get url => _url;
   String get base => _base;
   String get key => _key;
   String get entry => _entry;
-  ProxyServer get server => _server;
+  ProxyServer get server => _server!;
   late Timer _timer;
   int _oldSpeed = 0;
   int _speed = 0;
@@ -164,6 +164,7 @@ abstract class ProxyItem {
   void dispose() {
     server._removeItem(this);
     _timer.cancel();
+    _server = null;
   }
 
   void itemLoaded(LoadItem item, List<List<int>> chunks) {
@@ -808,5 +809,9 @@ class ProxyServer {
 
   void _removeItem(ProxyItem item) {
     items.remove(item.key);
+  }
+
+  String keyFromURL(String url) {
+    return _calculateKey(url);
   }
 }

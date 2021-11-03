@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 
@@ -7,13 +8,13 @@ import 'package:convert/convert.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_dapp/file_system.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
+import 'package:glib/utils/git_repository.dart';
 import 'package:kumav/extensions/js_processor.dart';
 import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/utils/assets_filesystem.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
-import 'package:dart_git/dart_git.dart';
 import 'package:xml_layout/status.dart';
 import 'package:xml_layout/template.dart';
 import 'package:xml_layout/xml_layout.dart';
@@ -22,6 +23,36 @@ import 'package:xml/xml.dart' as xml;
 import 'io_filesystem.dart';
 import 'message_exception.dart';
 
+class GitActionValue {
+  GitAction? action;
+  String label;
+  int loaded;
+  int total;
+  String? error;
+
+  GitActionValue({
+    required this.action,
+    required this.label,
+    required this.loaded,
+    required this.total,
+    this.error,
+  });
+
+  GitActionValue copyWith({
+    String? label,
+    int? loaded,
+    int? total,
+    String? error,
+  }) => GitActionValue(
+    action: this.action,
+    label: label ?? this.label,
+    loaded: loaded ?? this.loaded,
+    total: total ?? this.total,
+    error: error ?? this.error,
+  );
+
+  bool get hasError => error != null;
+}
 
 class FakeNodeControl with NodeControl {
 
@@ -184,4 +215,128 @@ class Plugin {
     }
   }
 
+  GitRepository? _gitRepository;
+  GitRepository? getRepository(String branch) {
+    if (_gitRepository == null) {
+      if (isValidate) {
+        var dir = Directory("${_root.path}/$id");
+        _gitRepository = GitRepository.allocate(dir.path, branch)..retain();
+      }
+    }
+    return _gitRepository;
+  }
+
+  Future<void> delete() async {
+    var dir = Directory("${_root.path}/$id");
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
+  }
+
+  Stream<GitActionValue> clone(String remoteUrl, String branch) async* {
+    var dir = Directory("${_root.path}/$id");
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
+    await dir.create(recursive: true);
+
+    GitRepository repo = GitRepository.allocate(dir.path, branch)..retain();
+    var action = repo.cloneFromRemote(remoteUrl)..retain();
+
+    StreamController<GitActionValue> streamController = StreamController();
+    action.setOnProgress((String string, int loaded, int total) {
+      streamController.add(GitActionValue(
+        action: action,
+        label: string,
+        loaded: loaded,
+        total: total,
+      ));
+    });
+    action.setOnComplete(() {
+      streamController.close();
+    });
+
+    yield* streamController.stream;
+
+    if (action.hasError()) {
+      yield GitActionValue(
+        action: action,
+        label: "",
+        loaded: 0,
+        total: 0,
+        error: action.getError(),
+      );
+    }
+
+    action.release();
+    repo.release();
+
+  }
+
+  Stream<GitActionValue> fetchAndCheckout(String branch) async* {
+    GitRepository? repo = getRepository(branch);
+
+    if (repo?.isOpen() == true) {
+      var action = repo!.fetch();
+      StreamController<GitActionValue> streamController = StreamController();
+      action.setOnProgress((String string, int loaded, int total) {
+        streamController.add(GitActionValue(
+          action: action,
+          label: string,
+          loaded: loaded,
+          total: total,
+        ));
+      });
+      action.setOnComplete(() {
+        streamController.close();
+      });
+      yield* streamController.stream;
+
+      if (action.hasError()) {
+        yield GitActionValue(
+          action: action,
+          label: "",
+          loaded: 0,
+          total: 0,
+          error: action.getError(),
+        );
+        return;
+      }
+
+      streamController = StreamController();
+      action = repo.checkout();
+      action.setOnProgress((String string, int loaded, int total) {
+        streamController.add(GitActionValue(
+          action: action,
+          label: string,
+          loaded: loaded,
+          total: total,
+        ));
+      });
+      action.setOnComplete(() {
+        streamController.close();
+      });
+      yield* streamController.stream;
+
+      if (action.hasError()) {
+        yield GitActionValue(
+          action: action,
+          label: "",
+          loaded: 0,
+          total: 0,
+          error: action.getError(),
+        );
+        return;
+      }
+
+    } else {
+      yield GitActionValue(
+        action: null,
+        label: "",
+        loaded: 0,
+        total: 0,
+        error: "Can not open git repository."
+      );
+    }
+  }
 }

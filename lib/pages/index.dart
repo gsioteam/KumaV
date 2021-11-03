@@ -50,7 +50,6 @@ class _IndexState extends State<Index> {
       case HomePages.Home: {
         return Collections(
           key: ValueKey(HomePages.Home),
-          plugin: Manager.instance.plugins.current,
         );
       }
       case HomePages.History: {
@@ -73,74 +72,75 @@ class _IndexState extends State<Index> {
     Size size = MediaQuery.of(context).size;
 
     return WillPopScope(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Navigator(
-                initialRoute: _initPage,
-                onGenerateRoute: (settings) {
-                  if (settings.name == _initPage) {
-                    return MaterialPageRoute(builder: (context) {
-                      return Scaffold(
-                        body: NotificationListener<OpenVideoNotification>(
-                          child: _buildBody(),
-                          onNotification: (notification) {
-                            _videoKey.currentState?.play(VideoInfo(
-                              key: notification.key,
-                              data: notification.data,
-                              plugin: notification.plugin,
-                            ));
-                            return true;
-                          },
-                        ),
-                        bottomNavigationBar: BottomNavigationBar(
-                          items: [
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.favorite),
-                              label: kt("favorites"),
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.file_download),
-                              label: kt("download_list"),
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.home),
-                              label: kt("video_home"),
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.history),
-                              label: kt("history"),
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.settings),
-                              label: kt("settings"),
-                            ),
-                          ],
-                          onTap: (index) {
-                            setState(() {
-                              _oldIndex = selected;
-                              selected = HomePages.values[index];
-                            });
-                          },
-                          currentIndex: selected.index,
-                        ),
-                      );
-                    });
-                  }
-                },
+        child: NotificationListener<OpenVideoNotification>(
+          onNotification: (notification) {
+            _videoKey.currentState?.play(VideoInfo(
+              key: notification.key,
+              data: notification.data,
+              plugin: notification.plugin,
+              resolution: notification.resolution,
+            ));
+            return true;
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Navigator(
+                  initialRoute: _initPage,
+                  onGenerateRoute: (settings) {
+                    if (settings.name == _initPage) {
+                      return MaterialPageRoute(builder: (context) {
+                        return Scaffold(
+                          body:_buildBody(),
+                          bottomNavigationBar: BottomNavigationBar(
+                            items: [
+                              BottomNavigationBarItem(
+                                icon: Icon(Icons.favorite),
+                                label: loc("favorites"),
+                              ),
+                              BottomNavigationBarItem(
+                                icon: Icon(Icons.file_download),
+                                label: loc("download_list"),
+                              ),
+                              BottomNavigationBarItem(
+                                icon: Icon(Icons.home),
+                                label: loc("video_home"),
+                              ),
+                              BottomNavigationBarItem(
+                                icon: Icon(Icons.history),
+                                label: loc("history"),
+                              ),
+                              BottomNavigationBarItem(
+                                icon: Icon(Icons.settings),
+                                label: loc("settings"),
+                              ),
+                            ],
+                            onTap: (index) {
+                              setState(() {
+                                _oldIndex = selected;
+                                selected = HomePages.values[index];
+                              });
+                            },
+                            currentIndex: selected.index,
+                          ),
+                        );
+                      });
+                    }
+                  },
+                ),
               ),
-            ),
-            VideoSheet(
-                key: _videoKey,
-                maxHeight: size.height,
-                builder: (context, physics, controller) {
-                  return Video(
-                    physics: physics,
-                    controller: controller,
-                  );
-                }
-            ),
-          ],
+              VideoSheet(
+                  key: _videoKey,
+                  maxHeight: size.height,
+                  builder: (context, physics, controller) {
+                    return Video(
+                      physics: physics,
+                      controller: controller,
+                    );
+                  }
+              ),
+            ],
+          ),
         ),
         onWillPop: () async {
           return true;

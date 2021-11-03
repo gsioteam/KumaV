@@ -173,7 +173,7 @@ class VideoDownloader {
     }
   }
 
-  VideoDownloader(String url, {Map<String, String>? headers}) {
+  VideoDownloader(String url, {Map<String, dynamic>? headers}) {
     ProxyServer server = ProxyServer.instance;
     _proxyItem = server.get(url, headers: headers);
     _proxyItem.retain();
@@ -213,6 +213,7 @@ class VideoDownloader {
         }
         totalWeight += item.weight;
       }
+      print("check state 4");
       if (count == _proxyItem.loadItems.length && _state != DownloadState.Complete) {
         _state = DownloadState.Complete;
         onState?.call();

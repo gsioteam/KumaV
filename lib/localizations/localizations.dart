@@ -1,6 +1,4 @@
 
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:yaml/yaml.dart';
@@ -10,27 +8,42 @@ class LocaleChangedNotification extends Notification {
   LocaleChangedNotification(this.locale);
 }
 
-class KumaLocalizations {
-  Map words;
-  Map total_words;
-  KumaLocalizations(this.words, this.total_words);
+class NeoLocalizations {
+  Map? words;
+  Map? totalWords;
+
+  NeoLocalizations(this.words, this.totalWords);
 
   String get(String key) {
-    if (words.containsKey(key)) return words[key];
-    var txt = total_words[key];
+    if (words?.containsKey(key) == true) return words![key];
+    var txt = totalWords?[key];
     if (txt == null) txt = key;
     return txt;
   }
+
+  static String load(BuildContext context, String key, {
+    String? defaultResult,
+    Map? arguments
+  }) {
+    var res = Localizations.of<NeoLocalizations>(context, NeoLocalizations)?.get(key) ?? defaultResult;
+    if (res == null) {
+      return key;
+    }
+    arguments?.forEach((key, value) {
+      res = res!.replaceAll("{$key}", value.toString());
+    });
+    return res!;
+  }
 }
 
-class KumaLocalizationsDelegate extends LocalizationsDelegate<KumaLocalizations> {
+class NeoLocalizationsDelegate extends LocalizationsDelegate<NeoLocalizations> {
   static const Map<String, Locale> supports = const <String, Locale>{
     "en": const Locale.fromSubtags(languageCode: 'en'),
+    "zh-hans": const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
     "zh-hant": const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-    "zh-hans": const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans')
   };
 
-  const KumaLocalizationsDelegate();
+  const NeoLocalizationsDelegate();
 
   @override
   bool isSupported(Locale locale) {
@@ -38,45 +51,57 @@ class KumaLocalizationsDelegate extends LocalizationsDelegate<KumaLocalizations>
   }
 
   @override
-  Future<KumaLocalizations> load(Locale locale) async {
+  Future<NeoLocalizations> load(Locale locale) async {
     switch (locale.languageCode) {
       case 'zh': {
         if (locale.scriptCode == 'Hans') {
-          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hans.yaml')));
+          return _load('zh_hans');
         } else if (locale.scriptCode == 'Hant') {
-          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hant.yaml')));
+          return _load('zh_hant');
         } else {
-          return get(loadYaml(await rootBundle.loadString('res/languages/zh_hant.yaml')));
+          return _load('zh_hant');
         }
-        break;
       }
       default: {
-        return get(loadYaml(await rootBundle.loadString('res/languages/en.yaml')));
+        return _load('en');
       }
     }
   }
 
-  Future<KumaLocalizations> get(Map data) {
-    return SynchronousFuture<KumaLocalizations>(KumaLocalizations(data, data));
-  }
-
   @override
-  bool shouldReload(LocalizationsDelegate old) => false;
-}
+  bool shouldReload(covariant LocalizationsDelegate<NeoLocalizations> old) => false;
 
-String Function(String) lc(BuildContext ctx) {
-  KumaLocalizations? loc = Localizations.of<KumaLocalizations>(ctx, KumaLocalizations);
-  return (String key)=>loc?.get(key) ?? key;
-}
-
-extension KinokoLocalizationsWidget on Widget {
-  String kt(BuildContext context, String key) {
-    return Localizations.of<KumaLocalizations>(context, KumaLocalizations)?.get(key) ?? key;
+  Future<NeoLocalizations> _load(String name) async {
+    var data = loadYaml(await rootBundle.loadString("localizations/$name.yaml"));
+    return NeoLocalizations(data, data);
   }
 }
 
-extension KinokoLocalizationsState on State {
-  String kt(String key) {
-    return Localizations.of<KumaLocalizations>(this.context, KumaLocalizations)?.get(key) ?? key;
+typedef NewLocalizationsHandler = String Function(String, {String? defaultResult, Map? arguments});
+
+NewLocalizationsHandler locFunc(BuildContext context) {
+  return (String key, {String? defaultResult, Map? arguments}) =>
+      NeoLocalizations.load(context, key, defaultResult: defaultResult, arguments: arguments);
+}
+
+extension NeoLocalizationsWidget on Widget {
+  String loc(BuildContext context, String key, {
+    String? defaultResult,
+    Map? arguments
+  }) {
+    return NeoLocalizations.load(context, key,
+        defaultResult: defaultResult,
+        arguments: arguments);
+  }
+}
+
+extension NeoLocalizationsState on State {
+  String loc(String key, {
+    String? defaultResult,
+    Map? arguments
+  }) {
+    return NeoLocalizations.load(context, key,
+        defaultResult: defaultResult,
+        arguments: arguments);
   }
 }

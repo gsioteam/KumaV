@@ -86,7 +86,7 @@ class _FavoritesState extends State<Favorites> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(kt('favorites')),
+        title: Text(loc('favorites')),
       ),
       body: ReorderableListView.builder(
         itemBuilder: (context, index) {
@@ -96,7 +96,7 @@ class _FavoritesState extends State<Favorites> {
             child: FavoriteCell(
               item: item,
               onTap: () async {
-                Plugin plugin = await Manager.instance.plugins[item.pluginID];
+                Plugin? plugin = await Manager.instance.plugins.loadPlugin(item.pluginID);
                 if (plugin.isValidate) {
                   OpenVideoNotification(
                     key: item.key,
@@ -104,7 +104,7 @@ class _FavoritesState extends State<Favorites> {
                     plugin: plugin,
                   ).dispatch(context);
                 } else {
-                  Fluttertoast.showToast(msg: kt('no_plugin'));
+                  Fluttertoast.showToast(msg: loc('no_plugin'));
                 }
               },
             ),
@@ -113,20 +113,22 @@ class _FavoritesState extends State<Favorites> {
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                    title: Text(kt('confirm')),
-                    content: Text(kt('remove_favorite').replaceFirst('{0}', item.title)),
+                    title: Text(loc('confirm')),
+                    content: Text(loc('remove_favorite', arguments: {
+                      0: item.title
+                    })),
                     actions: [
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(false);
                         },
-                        child: Text(kt('no'))
+                        child: Text(loc('no'))
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(true);
                         },
-                        child: Text(kt('yes'))
+                        child: Text(loc('yes'))
                       ),
                     ],
                   );

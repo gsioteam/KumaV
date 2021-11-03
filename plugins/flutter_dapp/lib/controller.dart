@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dapp/dapp_state.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:js_script/js_script.dart';
 import 'package:js_script/types.dart';
 
@@ -45,6 +46,7 @@ class Controller {
       return value;
     }
   }
+
 }
 
 ClassInfo controllerClass = ClassInfo<Controller>(

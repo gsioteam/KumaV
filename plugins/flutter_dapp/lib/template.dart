@@ -189,6 +189,7 @@ Register register = Register(() {
       onTap: node.s<VoidCallback>("onTap"),
       dense: node.s<bool>("dense",),
       contentPadding: node.s<EdgeInsets>("padding"),
+      tileColor: node.s<Color>("color"),
     );
   });
   var imgBuilder = (node, key) {

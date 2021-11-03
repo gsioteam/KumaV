@@ -65,7 +65,7 @@ class MainController extends Controller {
                 this.data.loading = false;
             });
         } catch (e) {
-            console.log(`${e}\n${e.stack}`);
+            showToast(`${e}\n${e.stack}`);
             this.setState(()=>{
                 this.data.loading = false;
             });

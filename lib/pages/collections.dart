@@ -8,6 +8,7 @@ import 'package:kumav/pages/plugins.dart';
 import 'package:kumav/pages/ext_page.dart';
 import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/image_providers.dart';
+import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/utils/search_page_route.dart';
 import 'package:kumav/widgets/no_data.dart';
@@ -15,11 +16,9 @@ import 'package:kumav/widgets/no_data.dart';
 import '../localizations/localizations.dart';
 
 class Collections extends StatefulWidget {
-  final Plugin? plugin;
 
   Collections({
     Key? key,
-    this.plugin,
   }) : super(key: key);
 
   @override
@@ -30,13 +29,15 @@ const double _LogoSize = 32;
 
 class _CollectionsState extends State<Collections> {
 
+  Plugin? plugin;
+
   List<GlobalKey> _keys = [];
 
   @override
   Widget build(BuildContext context) {
 
     List<Widget> actions = [];
-    var extensions = widget.plugin?.information?.extensions;
+    var extensions = plugin?.information?.extensions;
 
     if (extensions != null) {
       for (int i = 0, t = extensions.length; i < t; ++i) {
@@ -68,7 +69,7 @@ class _CollectionsState extends State<Collections> {
                 center: center,
                 builder: (context) {
                   return ExtPage(
-                    plugin: widget.plugin!,
+                    plugin: plugin!,
                     entry: extension.index,
                   );
                 }
@@ -81,7 +82,7 @@ class _CollectionsState extends State<Collections> {
     return Scaffold(
       appBar: AppBar(
         title: _buildLogo(context),
-        elevation: widget.plugin?.information?.appBarElevation,
+        elevation: plugin?.information?.appBarElevation,
         actions: actions,
       ),
       body: _buildBody(),
@@ -89,7 +90,7 @@ class _CollectionsState extends State<Collections> {
   }
 
   Widget _buildBody() {
-    if (widget.plugin == null) {
+    if (plugin == null) {
       return Stack(
         children: [
           Positioned.fill(child: NoData()),
@@ -114,7 +115,7 @@ class _CollectionsState extends State<Collections> {
                     ),
                   ),
                   Text(
-                    kt('click_to_select'),
+                    loc('click_to_select'),
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).disabledColor,
@@ -132,21 +133,21 @@ class _CollectionsState extends State<Collections> {
         ],
       );
     } else {
-      String index = widget.plugin!.information!.index;
+      String index = plugin!.information!.index;
       if (index[0] != '/') {
         index = '/' + index;
       }
       return DApp(
         entry: index,
-        fileSystems: [widget.plugin!.fileSystem],
+        fileSystems: [plugin!.fileSystem],
         onInitialize: (script) {
-          setupJS(script, widget.plugin!);
+          setupJS(script, plugin!);
 
           script.global['openVideo'] = script.function((argv) {
             OpenVideoNotification(
               key: argv[0],
               data: jsValueToDart(argv[1]),
-              plugin: widget.plugin!
+              plugin: plugin!
             ).dispatch(context);
           });
         },
@@ -156,7 +157,7 @@ class _CollectionsState extends State<Collections> {
 
   Widget _buildLogo(BuildContext context) {
     return InkWell(
-      highlightColor: Theme.of(context).appBarTheme.backgroundColor,
+      highlightColor: Theme.of(context).primaryColor,
       child: Container(
         height: 36,
         child: Row(
@@ -165,16 +166,15 @@ class _CollectionsState extends State<Collections> {
               radius: _LogoSize / 2,
               backgroundColor: Theme.of(context).colorScheme.background,
               child: ClipOval(
-                child: widget.plugin == null ?
+                child: plugin == null ?
                 Icon(
                   Icons.extension,
                   size: _LogoSize * 0.66,
                   color: Theme.of(context).colorScheme.onBackground,
-                ) :
-                Image(
+                ) : pluginImage(
+                  plugin,
                   width: _LogoSize,
                   height: _LogoSize,
-                  image: pluginImageProvider(widget.plugin),
                   fit: BoxFit.contain,
                   errorBuilder: (context, e, stack) {
                     return Container(
@@ -197,7 +197,7 @@ class _CollectionsState extends State<Collections> {
                 padding: EdgeInsets.symmetric(
                   horizontal: 12,
                 ),
-                child: Text(widget.plugin?.information?.name ?? kt('select_project')),
+                child: Text(plugin?.information?.name ?? loc('select_project')),
               ),
             ),
           ],
@@ -211,4 +211,23 @@ class _CollectionsState extends State<Collections> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+
+    plugin = Manager.instance.plugins.current;
+    Manager.instance.plugins.addListener(_update);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    Manager.instance.plugins.removeListener(_update);
+  }
+
+  void _update() {
+    setState(() {
+      plugin = Manager.instance.plugins.current;
+    });
+  }
 }

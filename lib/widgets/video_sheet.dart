@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import 'package:flutter_dapp/flutter_dapp.dart';
+import 'package:kumav/pages/video.dart';
 import 'package:kumav/utils/plugin.dart';
 
 import 'value_widget.dart';
@@ -95,11 +96,13 @@ class VideoInfo {
   String key;
   dynamic data;
   Plugin plugin;
+  ResolutionData? resolution;
 
   VideoInfo({
     required this.key,
     required this.data,
     required this.plugin,
+    this.resolution,
   });
 }
 

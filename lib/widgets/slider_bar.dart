@@ -5,6 +5,55 @@ import 'package:flutter/material.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 import 'package:neo_video_player/neo_video_player.dart';
 
+class BufferedController {
+  final ProxyItem proxyItem;
+  bool isUpdate = false;
+
+  BufferedController(this.proxyItem) {
+    proxyItem.addOnBuffered(_onBuffered);
+  }
+
+  dispose() {
+    proxyItem.removeOnBuffered(_onBuffered);
+  }
+
+  _onBuffered() {
+    isUpdate = true;
+  }
+}
+
+class BufferedPainter extends CustomPainter {
+
+  final BufferedController controller;
+
+  BufferedPainter(this.controller);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var buffered = controller.proxyItem.buffered;
+    if (buffered != null) {
+      Paint paint = Paint();
+      paint.strokeWidth = size.height;
+      paint.style = PaintingStyle.stroke;
+      paint.color = Colors.white38;
+      paint.strokeCap = StrokeCap.round;
+      var vCent = size.height/2;
+      for (var item in buffered) {
+        canvas.drawLine(
+            Offset(item.start * size.width, vCent),
+            Offset(item.end * size.width, vCent),
+            paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return controller.isUpdate;
+  }
+
+}
+
 class SliderBar extends StatefulWidget {
 
   final VideoPlayerController controller;
@@ -54,6 +103,8 @@ class _SliderBarState extends State<SliderBar> {
   bool _seeking = false;
   bool _waitSeeking = false;
 
+  late BufferedController _bufferedController;
+
   @override
   Widget build(BuildContext context) {
     return RawGestureDetector(
@@ -100,11 +151,16 @@ class _SliderBarState extends State<SliderBar> {
                       width: constraints.maxWidth,
                       height: 2,
                       decoration: BoxDecoration(
-                        color: Colors.white38,
+                        color: Colors.white12,
                         borderRadius: BorderRadius.circular(1),
                       ),
                       child: Stack(
                         children: [
+                          Positioned.fill(
+                              child: CustomPaint(
+                                painter: BufferedPainter(_bufferedController),
+                              )
+                          ),
                           FractionallySizedBox(
                             widthFactor: percent,
                             heightFactor: 1,
@@ -185,6 +241,7 @@ class _SliderBarState extends State<SliderBar> {
     super.initState();
 
     widget.controller.addListener(_update);
+    _bufferedController = BufferedController(widget.proxyItem);
   }
 
   @override
@@ -192,6 +249,7 @@ class _SliderBarState extends State<SliderBar> {
     super.dispose();
 
     widget.controller.removeListener(_update);
+    _bufferedController.dispose();
   }
 
   void _update() {

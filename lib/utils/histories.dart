@@ -15,11 +15,6 @@ class Histories extends GetReady with ChangeNotifier {
 
   @override
   Future<void> setup() async {
-//    var data = await _historiesStore.find(database, finder: Finder(
-//      sortOrders: [
-//        SortOrder("date", false),
-//      ],
-//    ));
     _historiesStore.addOnChangesListener(database, (transaction, changes) {
       notifyListeners();
     });
