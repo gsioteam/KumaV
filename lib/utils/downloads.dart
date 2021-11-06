@@ -27,7 +27,7 @@ class DownloadItem extends ItemData with ChangeNotifier {
     required String title,
     required String subtitle,
     required String videoKey,
-    Map? headers,
+    required Map? headers,
   }) : super(
     key: key,
     data: data,
@@ -153,6 +153,7 @@ class Downloads extends GetReady with ChangeNotifier {
     required String title,
     required String subtitle,
     required String videoKey,
+    required Map? videoHeaders,
   }) async {
     String saveKey = ProxyServer.instance.keyFromURL(videoUrl);
     for (var item in _items) {
@@ -169,6 +170,7 @@ class Downloads extends GetReady with ChangeNotifier {
       title: title,
       subtitle: subtitle,
       videoKey: videoUrl,
+      headers: videoHeaders,
     );
     newItem._manager = this;
     _items.insert(0, newItem);

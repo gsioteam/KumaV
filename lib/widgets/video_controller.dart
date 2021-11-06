@@ -7,11 +7,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:kumav/widgets/bordered_menu_button.dart';
-import 'package:neo_video_player/neo_video_player.dart' as neo;
+// import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:video_player/video_player.dart' as neo;
 import 'package:kumav/pages/fullscreen.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 import 'package:kumav/widgets/video_sheet.dart';
 
+import '../localizations/localizations.dart';
 import 'slider_bar.dart';
 import 'video_player.dart';
 
@@ -20,7 +22,9 @@ class VideoController extends StatefulWidget {
   final ProxyItem? proxyItem;
   final List<VideoResolution> resolutions;
   final void Function(int index)? onSelectResolution;
+  final VoidCallback? onReload;
   final int currentSelect;
+  final bool fullscreen;
 
   VideoController({
     Key? key,
@@ -29,6 +33,8 @@ class VideoController extends StatefulWidget {
     this.resolutions = const [],
     this.onSelectResolution,
     this.currentSelect = 0,
+    this.onReload,
+    this.fullscreen = false,
   }) : super(key: key);
 
   @override
@@ -160,11 +166,16 @@ class VideoControllerState extends State<VideoController> {
                       right: 0,
                       child: Row(
                         children: [
-                          IconButton(
-                            onPressed: () {
-                              VideoSheetMinifyNotification().dispatch(context);
-                            },
-                            icon: Icon(Icons.keyboard_arrow_down)
+                          widget.fullscreen? IconButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              icon: Icon(Icons.arrow_back_ios_outlined)
+                          ) : IconButton(
+                              onPressed: () {
+                                VideoSheetMinifyNotification().dispatch(context);
+                              },
+                              icon: Icon(Icons.keyboard_arrow_down)
                           ),
                           Expanded(child: Container()),
                           ValueListenableBuilder<int>(
@@ -183,7 +194,10 @@ class VideoControllerState extends State<VideoController> {
                               }
                             }
                           ),
-                          if (widget.resolutions.length > 1) _buildResolutionButton(context),
+                          if (widget.resolutions.length > 1) Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: _buildResolutionButton(context),
+                          ),
                           PopupMenuButton(
                             itemBuilder: (context) {
                               return [
@@ -215,6 +229,23 @@ class VideoControllerState extends State<VideoController> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          DefaultTextStyle(
+                            style: TextStyle(
+                              color: Colors.white,
+                            ),
+                            child: ValueListenableBuilder<neo.VideoPlayerValue>(
+                              valueListenable: widget.controller!,
+                              builder: (context, value, child) {
+                                return Row(
+                                  children: [
+                                    Text(_durationText(value.position)),
+                                    Expanded(child: Container()),
+                                    Text(_durationText(value.duration)),
+                                  ],
+                                );
+                              },
+                            )
+                          ),
                           SliderBar(
                             controller: widget.controller!,
                             proxyItem: widget.proxyItem!,
@@ -277,7 +308,12 @@ class VideoControllerState extends State<VideoController> {
                                 },
                               ),
                               Expanded(child: Container()),
-                              IconButton(
+                              widget.fullscreen ? IconButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  icon: Icon(Icons.fullscreen_exit)
+                              ) : IconButton(
                                 onPressed: () async {
                                   SystemChrome.setPreferredOrientations([
                                     DeviceOrientation.landscapeLeft,
@@ -286,6 +322,11 @@ class VideoControllerState extends State<VideoController> {
                                   await Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                                     return Fullscreen(
                                       controller: widget.controller!,
+                                      proxyItem: widget.proxyItem,
+                                      resolutions: widget.resolutions,
+                                      currentSelect: widget.currentSelect,
+                                      onSelectResolution: widget.onSelectResolution,
+                                      onReload: widget.onReload,
                                     );
                                   }));
                                   SystemChrome.setPreferredOrientations([
@@ -321,7 +362,7 @@ class VideoControllerState extends State<VideoController> {
                         child: Center(
                           child: DefaultTextStyle(
                             style: TextStyle(
-                              color: Colors.deepOrange
+                              color: Colors.orange
                             ),
                             child: Padding(
                               padding: EdgeInsets.symmetric(
@@ -336,7 +377,22 @@ class VideoControllerState extends State<VideoController> {
                                     ),
                                   ),
                                   Padding(padding: EdgeInsets.only(top: 10)),
-                                  Text(value.errorDescription??""),
+                                  Expanded(
+                                    child: Text(value.errorDescription??"")
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      widget.onReload?.call();
+                                    }, 
+                                    child: Text(loc("reload")),
+                                    style: OutlinedButton.styleFrom(
+                                      primary: Colors.orange,
+                                      side: BorderSide(
+                                        color: Colors.orange
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(padding: EdgeInsets.only(top: 10)),
                                 ],
                               ),
                             )
@@ -494,5 +550,16 @@ class VideoControllerState extends State<VideoController> {
       unit = "MB";
     }
     return "${sp.toStringAsFixed(2)} $unit";
+  }
+
+  String fixed2(int i) {
+    return i < 10 ? "0$i" : "$i";
+  }
+
+  String _durationText(Duration duration) {
+    String text = "${fixed2(duration.inMinutes % 60)}:${fixed2(duration.inSeconds % 60)}";
+    if (duration.inHours > 0)
+      text = "${duration.inHours}:$text";
+    return text;
   }
 }

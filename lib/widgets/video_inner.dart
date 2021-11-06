@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:neo_video_player/neo_video_player.dart' as neo;
+// import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:video_player/video_player.dart' as neo;
 
 class VideoInner extends StatefulWidget {
   final BoxFit fit;
@@ -39,8 +40,11 @@ class _VideoInnerState extends State<VideoInner> {
           child: SizedBox(
             width: width,
             height: height,
-            child: widget.controller == null ? null : neo.VideoPlayer(
-              controller: widget.controller!,
+            child: widget.controller == null ? null : Hero(
+              tag: widget.controller!,
+              child: neo.VideoPlayer(
+                widget.controller!,
+              ),
             ),
           ),
         ),

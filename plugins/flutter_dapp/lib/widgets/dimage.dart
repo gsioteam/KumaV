@@ -13,6 +13,7 @@ class DImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+  final Map<String, String>? headers;
 
   DImage({
     Key? key,
@@ -20,6 +21,7 @@ class DImage extends StatelessWidget {
     this.width,
     this.height,
     this.fit = BoxFit.contain,
+    this.headers,
   }): super(key: key);
 
   @override
@@ -44,6 +46,7 @@ class DImage extends StatelessWidget {
         height: height,
         fit: fit,
         errorWidget: errorBuilder,
+        httpHeaders: headers,
       );
     } else {
       var data = DWidget.of(context);

@@ -21,7 +21,7 @@ import 'utils/plugin.dart';
 import 'utils/video_downloader/proxy_server.dart';
 import 'package:flutter_dapp/template.dart' as temp;
 
-bool _isTest = true;
+bool _isTest = false;
 
 void main() {
   runApp(MainApp());
@@ -49,6 +49,7 @@ class MainAppState extends State<MainApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: NeoLocalizationsDelegate.supports.values,
         title: 'KumaV',

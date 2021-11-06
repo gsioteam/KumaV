@@ -13,10 +13,9 @@ class VideoPlayer extends StatefulWidget {
   final Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers;
   final VideoPlayerController controller;
 
-  VideoPlayer({
+  VideoPlayer(this.controller, {
     Key? key,
     this.gestureRecognizers,
-    required this.controller,
   }) : super(key: key);
 
   @override

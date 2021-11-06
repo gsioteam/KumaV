@@ -6,7 +6,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:fluttertoast/fluttertoast.dart';
+// import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:video_player/video_player.dart' as neo;
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
 import 'package:kumav/widgets/video_controller.dart';
 
@@ -215,6 +217,8 @@ class _VideoPlayerState extends State<VideoPlayer> {
                   resolutions: widget.resolutions,
                   currentSelect: widget.currentSelect,
                   onSelectResolution: widget.onSelectResolution,
+                  onReload: _onReload,
+                  fullscreen: false,
                 ),
               ),
             )
@@ -224,22 +228,38 @@ class _VideoPlayerState extends State<VideoPlayer> {
     );
   }
 
-  bool _waitForPlaying = false;
   @override
   void initState() {
     super.initState();
 
     var dataSource = widget.dataSource;
     if (dataSource != null) {
-      proxyItem = ProxyServer.instance.get(dataSource.src, headers: dataSource.headers);
-      proxyItem!.retain();
-      controller = neo.VideoPlayerController(
-        proxyItem!.localServerUri,
-      );
-      controller!.addListener(_update);
-      _waitForPlaying = true;
-      controller!.play();
+      try {
+        Uri uri = Uri.parse(dataSource.src);
+        if (uri.hasScheme) {
+          proxyItem = ProxyServer.instance.get(dataSource.src, headers: dataSource.headers);
+          proxyItem!.retain();
+          _enableVideo();
+        } else {
+          Fluttertoast.showToast(msg: "The url is not validate");
+        }
+      } catch (e) {
+        Fluttertoast.showToast(msg: "The url is not validate " + e.toString());
+      }
     }
+  }
+
+  void _enableVideo() {
+    controller = neo.VideoPlayerController.network(
+      proxyItem!.localServerUri.toString(),
+    );
+    controller!.initialize().then((value) => controller!.play());
+
+    // controller = neo.VideoPlayerController(
+    //   proxyItem!.localServerUri,
+    // );
+    // controller!.play();
+    controller!.addListener(_update);
   }
 
   @override
@@ -260,4 +280,16 @@ class _VideoPlayerState extends State<VideoPlayer> {
 //    }
   }
 
+  void _onReload() async {
+    if (controller != null) {
+      setState(() {
+        controller?.dispose();
+        controller = null;
+      });
+      await Future.delayed(Duration(milliseconds: 100));
+      setState(() {
+        _enableVideo();
+      });
+    }
+  }
 }

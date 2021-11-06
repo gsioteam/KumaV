@@ -30,12 +30,13 @@ class DApp extends StatefulWidget {
   final DAppInitializeCallback? onInitialize;
 
   DApp({
+    Key? key,
     required this.entry,
     required this.fileSystems,
     this.controllerBuilder = _defaultControllerBuilder,
     this.classInfo,
     this.onInitialize,
-  });
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => DAppState();
@@ -48,18 +49,7 @@ class DAppState extends State<DApp> {
   @override
   void initState() {
     super.initState();
-    script = JsScript(
-      fileSystems: [
-        setupJs.fileSystem,
-      ]..addAll(widget.fileSystems)
-    );
-    script.addClass(widget.classInfo ?? controllerClass);
-    script.addClass(timerClass);
-    script.run("/setup.js");
-    script.global["showToast"] = (String msg) {
-      Fluttertoast.showToast(msg: msg);
-    };
-    widget.onInitialize?.call(script);
+    _initScript();
     template.register();
   }
 
@@ -69,9 +59,43 @@ class DAppState extends State<DApp> {
     script.dispose();
   }
 
+  bool testSame(covariant DApp oldWidget) {
+    if (oldWidget.entry != widget.entry) return false;
+    if (oldWidget.fileSystems.length != widget.fileSystems.length) return false;
+    for (int i = 0, t = widget.fileSystems.length; i < t; ++i) {
+      if (oldWidget.fileSystems[i] != widget.fileSystems[i]) return false;
+    }
+    return true;
+  }
+
+  void _initScript() {
+    script = JsScript(
+        fileSystems: [
+          setupJs.fileSystem,
+        ]..addAll(widget.fileSystems)
+    );
+    script.addClass(widget.classInfo ?? controllerClass);
+    script.addClass(timerClass);
+    script.run("/setup.js");
+    script.global["showToast"] = (String msg) {
+      Fluttertoast.showToast(msg: msg);
+    };
+    widget.onInitialize?.call(script);
+  }
+
+  @override
+  void didUpdateWidget(covariant DApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!(testSame(oldWidget))) {
+      script.dispose();
+      _initScript();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DWidget(
+      key: ValueKey(script),
       script: script,
       file: widget.entry,
       controllerBuilder: widget.controllerBuilder,

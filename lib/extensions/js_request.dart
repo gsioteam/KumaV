@@ -52,6 +52,10 @@ class JsRequest {
       throw Exception("Request not open");
     }
     cancelToken = CancelToken();
+    dynamic rawBody;
+    if (body['type'] == 'string') {
+      rawBody = body['data'];
+    }
     var future = dio!.requestUri<ResponseBody>(
       Uri.parse(url),
       cancelToken: cancelToken,
@@ -62,6 +66,7 @@ class JsRequest {
       onReceiveProgress: (count, total) {
         onState?.call(['progress', count, total]);
       },
+      data: rawBody,
     );
     if (timeout != null) {
       future = future.timeout(Duration(milliseconds: timeout!), onTimeout: () {
@@ -109,20 +114,19 @@ class JsRequest {
 
   void _cleanUp() {
     cancelToken = null;
+    dio?.close();
     dio = null;
     onState = null;
   }
 
   void setRequestHeader(String key, String value) {
-    if (headers.containsKey(key)) {
-      var val = headers[key];
-      if (val is String) {
-        headers[key] = [val, value];
-      } else if (val is List) {
-        val.add(value);
-      } else {
-        headers[key] = value;
-      }
+    var val = headers[key];
+    if (val is String) {
+      headers[key] = [val, value];
+    } else if (val is List) {
+      val.add(value);
+    } else {
+      headers[key] = value;
     }
   }
 

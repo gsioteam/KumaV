@@ -3,7 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kumav/utils/video_downloader/proxy_server.dart';
-import 'package:neo_video_player/neo_video_player.dart';
+// import 'package:neo_video_player/neo_video_player.dart';
+import 'package:video_player/video_player.dart';
 
 class BufferedController {
   final ProxyItem proxyItem;

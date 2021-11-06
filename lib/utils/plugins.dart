@@ -162,9 +162,9 @@ class Plugins extends GetReady with ChangeNotifier {
               continue;
             }
             await rec.put(database, true);
-            await add(info);
+            if (!info.ignore)
+              await add(info);
           } else {
-            print("not");
           }
         } catch (e) {
           print("Error $e");

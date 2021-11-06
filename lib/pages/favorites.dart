@@ -9,6 +9,7 @@ import 'package:kumav/utils/favorites.dart';
 import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/widgets/hint_point.dart';
+import 'package:kumav/widgets/no_data.dart';
 
 import '../localizations/localizations.dart';
 
@@ -84,11 +85,12 @@ class Favorites extends StatefulWidget {
 class _FavoritesState extends State<Favorites> {
   @override
   Widget build(BuildContext context) {
+    int length = Manager.instance.favorites.items.length;
     return Scaffold(
       appBar: AppBar(
         title: Text(loc('favorites')),
       ),
-      body: ReorderableListView.builder(
+      body: length == 0 ? NoData() : ReorderableListView.builder(
         itemBuilder: (context, index) {
           var item = Manager.instance.favorites.items[index];
           return Dismissible(
@@ -110,29 +112,29 @@ class _FavoritesState extends State<Favorites> {
             ),
             confirmDismiss: (_) async {
               return showDialog<bool>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: Text(loc('confirm')),
-                    content: Text(loc('remove_favorite', arguments: {
-                      0: item.title
-                    })),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(false);
-                        },
-                        child: Text(loc('no'))
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: Text(loc('yes'))
-                      ),
-                    ],
-                  );
-                }
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text(loc('confirm')),
+                      content: Text(loc('remove_favorite', arguments: {
+                        0: item.title
+                      })),
+                      actions: [
+                        TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(false);
+                            },
+                            child: Text(loc('no'))
+                        ),
+                        TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(true);
+                            },
+                            child: Text(loc('yes'))
+                        ),
+                      ],
+                    );
+                  }
               );
             },
             onDismissed: (_) {
@@ -143,7 +145,7 @@ class _FavoritesState extends State<Favorites> {
             },
           );
         },
-        itemCount: Manager.instance.favorites.items.length,
+        itemCount: length,
         onReorder: (int oldIndex, int newIndex) {
           var items = Manager.instance.favorites.items;
           var item = items.removeAt(oldIndex);

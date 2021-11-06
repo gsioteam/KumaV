@@ -27,6 +27,7 @@ class ResolutionData {
   String title;
   String subtitle;
   String videoUrl;
+  Map? headers;
   String key;
 
   ResolutionData({
@@ -34,6 +35,7 @@ class ResolutionData {
     required this.subtitle,
     required this.videoUrl,
     required this.key,
+    required this.headers,
   });
 }
 
@@ -372,7 +374,11 @@ class _VideoState extends State<Video> {
       key: _videoInfo.key,
       plugin: _videoInfo.plugin,
     );
-    _processor = Processor(_videoInfo.key);
+    _processor = Processor(
+      _videoInfo.plugin.script!,
+      _videoInfo.plugin.information!.processor,
+      _videoInfo.key,
+    );
     _processor.addListener(_update);
     try {
       _jsProcessor = _videoInfo.plugin.makeProcessor(_processor);
@@ -449,6 +455,7 @@ class _VideoState extends State<Video> {
           key: res.key,
           data: {
             "videoUrl": res.videoUrl,
+            "headers": res.headers,
           }
         )..present = true);
       }

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_dapp/flutter_dapp.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/extensions/js_processor.dart';
+import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/utils/manager.dart';
 
 import 'video_player.dart';
@@ -19,6 +20,7 @@ abstract class Resolution with VideoResolution {
 
   String get title;
   String? get url;
+  Map? get headers;
 
   void dispose();
 }
@@ -28,6 +30,10 @@ class JsResolution extends Resolution with JsProxy {
 
   JsResolution(this.value) {
     value.retain();
+    var data = jsValueToDart(value['headers']);
+    if (data is Map) {
+      headers = data;
+    }
   }
 
   @override
@@ -40,6 +46,8 @@ class JsResolution extends Resolution with JsProxy {
 
   @override
   String? get url => value["url"];
+
+  Map? headers;
 }
 
 class PresentResolution extends Resolution {
@@ -48,9 +56,12 @@ class PresentResolution extends Resolution {
 
   String url;
 
+  Map? headers;
+
   PresentResolution({
     required this.title,
     required this.url,
+    this.headers,
   });
 
   @override
@@ -91,8 +102,16 @@ class _PlayerWrapState extends State<PlayerWrap> {
     DataSource? dataSource;
     int current = 0;
     if (_current?.url != null) {
-      dataSource = DataSource(_current!.url!);
-      current = resolutions.indexOf(_current!);
+      var item = _current!;
+      dataSource = DataSource(
+        item.url!,
+        item.headers == null ? null : Map<String, dynamic>.from(item.headers!),
+      );
+      for (int i = 0, t = resolutions.length; i < t; ++i) {
+        if (resolutions[i].url == _current!.url) {
+          current = i;
+        }
+      }
     }
     return VideoPlayer(
       key: ValueKey(_current),
@@ -126,7 +145,8 @@ class _PlayerWrapState extends State<PlayerWrap> {
     if (item?.present == true) {
       resolutions.add(PresentResolution(
         title: item!.title,
-        url: item.data["videoUrl"]
+        url: item.data["videoUrl"],
+        headers: item.data["headers"]
       ));
       setState(() {
         _current = resolutions[0];
@@ -148,6 +168,7 @@ class _PlayerWrapState extends State<PlayerWrap> {
             widget.downloadController.value = true;
           }
         } catch (e) {
+          print("error : ${e}");
           Fluttertoast.showToast(msg: e.toString());
         }
       }
@@ -187,10 +208,11 @@ class _PlayerWrapState extends State<PlayerWrap> {
         key: videoInfo.key,
         data: videoInfo.data,
         plugin: videoInfo.plugin,
-        videoUrl: resolution.url!,
         title: widget.item!.title,
         subtitle: widget.item!.subtitle,
         videoKey: videoInfo.key,
+        videoUrl: resolution.url!,
+        videoHeaders: resolution.headers
       );
       if (ret != null) {
         await ret.resume();

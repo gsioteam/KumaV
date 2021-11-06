@@ -81,3 +81,4 @@ about_description: "This is a open source software, visit "
 about_description_end: " for more information or report bugs or to suggest a new feature."
 about: About
 cache_manager: Cache
+reload: Reload

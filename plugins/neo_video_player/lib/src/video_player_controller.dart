@@ -32,6 +32,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     );
   }
 
+  VideoPlayerController.network(String dataSource) : this(Uri.parse(dataSource));
+
   static Future<dynamic> _methodHandler(MethodCall call) async {
     switch (call.method) {
       case 'update': {

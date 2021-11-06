@@ -210,9 +210,13 @@ class Favorites extends GetReady with ChangeNotifier {
 
   Future<void> _loadData(FavoriteItem item) async {
     if (item.date + 1800 * 1000 > DateTime.now().millisecondsSinceEpoch) return;
-    Processor processor = Processor(item.key);
     Plugin? plugin = await Manager.instance.plugins.loadPlugin(item.pluginID);
     if (plugin.isValidate == true) {
+      Processor processor = Processor(
+          plugin.script!,
+          plugin.information!.processor,
+          item.key
+      );
       JsValue jsProcessor = plugin.makeProcessor(processor);
 
       try {

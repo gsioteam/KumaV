@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:kumav/utils/video_item.dart';
+import 'package:kumav/widgets/no_data.dart';
 
 import '../localizations/localizations.dart';
 import 'video.dart';
@@ -66,7 +67,7 @@ class _HistoryState extends State<History> {
           ),
         ],
       ),
-      body: NotificationListener<ScrollUpdateNotification>(
+      body: items.length == 0 ? NoData() : NotificationListener<ScrollUpdateNotification>(
         child: ListView.builder(
           itemBuilder: (context, index) {
             var item = items[index];

@@ -1,16 +1,29 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:kumav/utils/video_downloader/proxy_server.dart';
+import 'package:kumav/widgets/video_controller.dart';
 import 'package:kumav/widgets/video_inner.dart';
-import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:kumav/widgets/video_player.dart';
+// import 'package:neo_video_player/neo_video_player.dart' as neo;
+import 'package:video_player/video_player.dart' as neo;
 
 class Fullscreen extends StatefulWidget {
-
-  final neo.VideoPlayerController controller;
+  final neo.VideoPlayerController? controller;
+  final ProxyItem? proxyItem;
+  final List<VideoResolution> resolutions;
+  final void Function(int index)? onSelectResolution;
+  final VoidCallback? onReload;
+  final int currentSelect;
 
   Fullscreen({
     Key? key,
-    required this.controller,
+    this.controller,
+    this.proxyItem,
+    this.resolutions = const [],
+    this.onSelectResolution,
+    this.currentSelect = 0,
+    this.onReload,
   }) : super(key: key);
 
   @override
@@ -28,45 +41,19 @@ class _FullscreenState extends State<Fullscreen> {
           VideoInner(
             controller: widget.controller,
           ),
-          Positioned(
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              child: DefaultTextStyle(
-                style: TextStyle(
-                  color: Colors.white
-                ),
-                child: IconTheme(
-                  data: IconThemeData(
-                    color: Colors.white,
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        icon: Icon(Icons.arrow_back_ios),
-                      ),
-                      Expanded(
-                        child: Text("title"),
-                      ),
-                      IconButton(
-                          onPressed: () {
-
-                          },
-                          icon: Icon(Icons.more_vert)
-                      ),
-                    ],
-                  )
-                ),
+          Positioned.fill(
+            child: SafeArea(
+              child: VideoController(
+                controller: widget.controller,
+                proxyItem: widget.proxyItem,
+                resolutions: widget.resolutions,
+                currentSelect: widget.currentSelect,
+                onSelectResolution: widget.onSelectResolution,
+                onReload: widget.onReload,
+                fullscreen: true,
               ),
-            ),
-            top: padding.top,
-            left: 0,
-            right: 0,
-            height: 56,
-          ),
+            )
+          )
         ],
       ),
       backgroundColor: Colors.black,

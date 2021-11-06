@@ -169,7 +169,8 @@ public class PlayerView extends GLSurfaceView {
         int mWidth = 0, mHeight = 0;
 
         public void onSurfaceChanged(GL10 glUnused, int width, int height) {
-            GLES20.glViewport(0, 0, width, height);
+            Log.i("onSurfaceChanged", "(" + width + ":" + height + ")");
+//            GLES20.glViewport(0, 0, width, height);
             mWidth = width;
             mHeight = height;
 //            mController.getMediaPlayer().getVLCVout().setWindowSize(width, height);

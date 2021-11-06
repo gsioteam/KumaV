@@ -52,6 +52,7 @@ public class NeoVideoPlayerController {
     private static final String FORMAT_DASH = "dash";
     private static final String FORMAT_HLS = "hls";
     private static final String FORMAT_OTHER = "other";
+    Surface surface;
 
     Player.Listener listener = new Player.Listener() {
 
@@ -257,6 +258,7 @@ public class NeoVideoPlayerController {
     }
 
 
+    TextureRegistry textureRegistry;
     NeoVideoPlayerController(Context context, Map params, TextureRegistry textureRegistry, MethodChannel channel) {
         id = params.get("id");
         player = new SimpleExoPlayer.Builder(context).build();
@@ -287,22 +289,11 @@ public class NeoVideoPlayerController {
         player.setMediaSource(mediaSource);
         player.prepare();
 
-        surfaceTextureEntry = textureRegistry.createSurfaceTexture();
-        surfaceTexture = surfaceTextureEntry.surfaceTexture();
-        surfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
-            @Override
-            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                for (OnFrameListener listener : onFrameListeners) {
-                    listener.onFrame();
-                }
-            }
-        });
-        Surface surface = new Surface(surfaceTexture);
-        player.setVideoSurface(surface);
-
         player.addListener(listener);
 
         progressTracker = new ProgressTracker();
+
+        this.textureRegistry = textureRegistry;
     }
 
     private static boolean isHTTP(Uri uri) {
@@ -364,6 +355,7 @@ public class NeoVideoPlayerController {
     public void dispose() {
         progressTracker.cancel();
         surfaceTextureEntry.release();
+        if (surface != null) surface.release();
         player.release();
     }
 
@@ -387,6 +379,20 @@ public class NeoVideoPlayerController {
     }
 
     public SurfaceTexture getSurfaceTexture() {
+        if (surfaceTexture == null) {
+            surfaceTextureEntry = textureRegistry.createSurfaceTexture();
+            surfaceTexture = surfaceTextureEntry.surfaceTexture();
+            surfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+                @Override
+                public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                    for (OnFrameListener listener : onFrameListeners) {
+                        listener.onFrame();
+                    }
+                }
+            });
+            surface = new Surface(surfaceTexture);
+            player.setVideoSurface(surface);
+        }
         return surfaceTexture;
     }
 

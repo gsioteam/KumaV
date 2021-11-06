@@ -47,6 +47,13 @@ class Controller {
     }
   }
 
+  loadString(String src) {
+    var state = this.state;
+    if (state != null) {
+      String path = state.relativePath(src);
+      return state.script.fileSystems.loadCode(path);
+    }
+  }
 }
 
 ClassInfo controllerClass = ClassInfo<Controller>(
@@ -58,5 +65,6 @@ ClassInfo controllerClass = ClassInfo<Controller>(
     "setState": JsFunction.ins((obj, argv) => obj.setState(argv[0])),
     "navigateTo": JsFunction.ins((obj, argv) => obj.navigateTo(argv[0], argv[1])),
     "findElement": JsFunction.ins((obj, argv) => obj.find(argv[0])),
+    "loadString": JsFunction.ins((obj, argv) => obj.loadString(argv[0])),
   }
 );

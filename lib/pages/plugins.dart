@@ -85,8 +85,8 @@ class _PluginCellState extends State<PluginCell> {
                 widget.info.src,
                 width: 48,
                 height: 48,
-              ) : DImage(
-                src: icon,
+              ) : pluginImage(
+                plugin,
                 width: 48,
                 height: 48,
               ),
@@ -209,6 +209,7 @@ class _PluginCellState extends State<PluginCell> {
       if (ret == ProgressResult.Success) {
         plugin = await Manager.instance.plugins.loadPlugin(widget.info.id);
         setState(() {});
+        await _setPlugin();
       }
     }
   }
@@ -228,7 +229,7 @@ class _PluginCellState extends State<PluginCell> {
     setState(() {});
   }
 
-  void _setPlugin() async {
+  Future<void> _setPlugin() async {
     var ret = await showDialog<bool>(
         context: context,
         builder: (context) {
@@ -253,9 +254,7 @@ class _PluginCellState extends State<PluginCell> {
         }
     );
     if (ret == true) {
-      setState(() {
-        Manager.instance.plugins.current = plugin;
-      });
+      Manager.instance.plugins.current = plugin;
     }
   }
 }
@@ -342,12 +341,15 @@ class _PluginsState extends State<PluginsWidget> {
     super.initState();
 
     _initialize();
+    Manager.instance.plugins.addListener(_update);
   }
 
   @override
   void dispose() {
     super.dispose();
     _disposed = true;
+
+    Manager.instance.plugins.removeListener(_update);
   }
 
   void _initialize() async {
@@ -360,6 +362,10 @@ class _PluginsState extends State<PluginsWidget> {
     if (DateTime.now().difference(updateTime).inSeconds > 3600) {
       _reload();
     }
+  }
+
+  void _update() {
+    setState(() {});
   }
 
   Future<dynamic> loadPlugins() async {

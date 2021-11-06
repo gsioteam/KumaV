@@ -5,6 +5,7 @@ import 'package:kumav/extensions/js_utils.dart';
 import 'package:kumav/utils/get_ready.dart';
 import 'package:kumav/utils/plugin.dart';
 import 'package:sembast/sembast.dart';
+import 'package:path/path.dart' as path;
 
 class ProcessorItem {
   String title;
@@ -132,8 +133,10 @@ class ProcessorValue {
 
 class Processor extends ValueNotifier<ProcessorValue> {
   static StoreRef _cacheRecord = StoreRef("video_cache");
+  JsScript script;
+  String source;
 
-  Processor(String key) : super(ProcessorValue(
+  Processor(this.script, this.source, String key) : super(ProcessorValue(
     key: key
   ));
 
@@ -165,6 +168,15 @@ class Processor extends ValueNotifier<ProcessorValue> {
       merge: true,
     );
   }
+
+  String relativePath(String src) => path.normalize(path.join(source, '..', src));
+
+  String? loadString(String src) {
+    String path = relativePath(src);
+    if (path[0] != '/')
+      path = "/$path";
+    return script.fileSystems.loadCode(path);
+  }
 }
 
 ClassInfo processorClass = ClassInfo<Processor>(
@@ -179,6 +191,7 @@ ClassInfo processorClass = ClassInfo<Processor>(
     ),
   },
   functions: {
+    "loadString": JsFunction.ins((obj, argv) => obj.loadString(argv[0])),
     "dispose": JsFunction.ins((obj, argv) => obj.dispose()),
   },
 );

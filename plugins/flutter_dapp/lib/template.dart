@@ -193,11 +193,24 @@ Register register = Register(() {
     );
   });
   var imgBuilder = (node, key) {
+    Map<String, String>? headers;
+    Map? map = node.s<Map>("headers");
+    if (map != null) {
+      headers = {};
+      map.forEach((key, value) {
+        if (value is String) {
+          headers![key] = value;
+        } else if (value is List) {
+          headers![key] = value.join(',');
+        }
+      });
+    }
     return DImage(
       src: node.s<String>("src")!,
       width: node.s<double>("width", 48.0),
       height: node.s<double>("height", 48.0),
       fit: node.s<BoxFit>("fit", BoxFit.contain)!,
+      headers: headers,
     );
   };
   XmlLayout.register("img", imgBuilder);

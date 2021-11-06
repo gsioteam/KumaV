@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kumav/utils/downloads.dart';
 import 'package:kumav/utils/manager.dart';
 import 'package:kumav/utils/plugin.dart';
+import 'package:kumav/widgets/no_data.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 import '../localizations/localizations.dart';
@@ -189,7 +190,7 @@ class _DownloadsState extends State<Downloads> {
       appBar: AppBar(
         title: Text(loc('download_list')),
       ),
-      body: ListView.builder(
+      body: items.length == 0 ? NoData() : ListView.builder(
         itemBuilder: (context, index) {
           var item = items[index];
           return Dismissible(
@@ -208,6 +209,7 @@ class _DownloadsState extends State<Downloads> {
                       subtitle: item.videoSubtitle,
                       videoUrl: item.videoUrl,
                       key: item.videoKey,
+                      headers: item.headers,
                     ),
                   ).dispatch(context);
                 } else {
@@ -224,16 +226,16 @@ class _DownloadsState extends State<Downloads> {
                     content: Text(loc("delete_item").replaceFirst("{1}", item.title).replaceFirst("{0}", item.subtitle)),
                     actions: [
                       TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(false);
-                        },
-                        child: Text(loc("no"))
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                          child: Text(loc("no"))
                       ),
                       TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: Text(loc("yes"))
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                          child: Text(loc("yes"))
                       ),
                     ],
                   );
