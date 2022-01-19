@@ -24,7 +24,7 @@ class VideoController extends StatefulWidget {
   final void Function(int index)? onSelectResolution;
   final VoidCallback? onReload;
   final int currentSelect;
-  final bool fullscreen;
+  final ValueNotifier<neo.VideoPlayerController?>? fullscreenController;
 
   VideoController({
     Key? key,
@@ -34,7 +34,7 @@ class VideoController extends StatefulWidget {
     this.onSelectResolution,
     this.currentSelect = 0,
     this.onReload,
-    this.fullscreen = false,
+    this.fullscreenController,
   }) : super(key: key);
 
   @override
@@ -121,7 +121,7 @@ class VideoControllerState extends State<VideoController> {
                           ValueListenableBuilder<neo.VideoPlayerValue>(
                             valueListenable: widget.controller!,
                             builder: (context, value, child) {
-                              if (value.isBuffering) {
+                              if (value.isBuffering || value.duration == Duration.zero) {
                                 return SizedBox(
                                   width: 52,
                                   height: 52,
@@ -166,7 +166,7 @@ class VideoControllerState extends State<VideoController> {
                       right: 0,
                       child: Row(
                         children: [
-                          widget.fullscreen? IconButton(
+                          widget.fullscreenController == null ? IconButton(
                               onPressed: () {
                                 Navigator.of(context).pop();
                               },
@@ -308,7 +308,7 @@ class VideoControllerState extends State<VideoController> {
                                 },
                               ),
                               Expanded(child: Container()),
-                              widget.fullscreen ? IconButton(
+                              widget.fullscreenController == null ? IconButton(
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                   },
@@ -319,9 +319,10 @@ class VideoControllerState extends State<VideoController> {
                                     DeviceOrientation.landscapeLeft,
                                     DeviceOrientation.landscapeRight
                                   ]);
+                                  SystemChrome.setEnabledSystemUIOverlays([]);
                                   await Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                                     return Fullscreen(
-                                      controller: widget.controller!,
+                                      controller: widget.fullscreenController!,
                                       proxyItem: widget.proxyItem,
                                       resolutions: widget.resolutions,
                                       currentSelect: widget.currentSelect,
@@ -331,6 +332,10 @@ class VideoControllerState extends State<VideoController> {
                                   }));
                                   SystemChrome.setPreferredOrientations([
                                     DeviceOrientation.portraitUp
+                                  ]);
+                                  SystemChrome.setEnabledSystemUIOverlays([
+                                    SystemUiOverlay.top,
+                                    SystemUiOverlay.bottom,
                                   ]);
                                 },
                                 icon: Icon(Icons.fullscreen)

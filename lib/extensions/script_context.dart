@@ -12,7 +12,11 @@ class ScriptContext implements JsDispose {
   }
 
   eval(String str) {
-    return script.eval(str);
+    var ret = script.eval(str);
+    if (ret is JsValue) {
+      ret = jsValueToDart(ret);
+    }
+    return ret;
   }
 
   dispose() {

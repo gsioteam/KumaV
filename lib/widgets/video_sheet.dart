@@ -8,7 +8,7 @@ import 'package:kumav/utils/plugin.dart';
 
 import 'value_widget.dart';
 
-enum _VideoSheetStatus {
+enum VideoSheetStatus {
   Closed,
   Mini,
   Fullscreen,
@@ -114,7 +114,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
   double to = 0;
   late ValueNotifier<RectValue> rectController;
 
-  _VideoSheetStatus status = _VideoSheetStatus.Closed;
+  VideoSheetStatus status = VideoSheetStatus.Closed;
   Widget? child;
 
   VideoInfo? _videoInfo;
@@ -139,7 +139,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
           color: Colors.white,
           elevation: 2,
           clipBehavior: Clip.hardEdge,
-          child: status == _VideoSheetStatus.Closed ? null : OverflowBox(
+          child: status == VideoSheetStatus.Closed ? null : OverflowBox(
             alignment: Alignment.topLeft,
             minWidth: 0,
             minHeight: 0,
@@ -243,14 +243,14 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
   bool onDrag(ScrollMetrics position, double offset) {
     animation.stop();
     switch (status) {
-      case _VideoSheetStatus.Mini: {
+      case VideoSheetStatus.Mini: {
         setState(() {
           top += offset;
           from = to = top;
         });
         return false;
       }
-      case _VideoSheetStatus.Fullscreen: {
+      case VideoSheetStatus.Fullscreen: {
         if ((offset > 0 && position.pixels == 0) || top > 0) {
           setState(() {
             top += offset;
@@ -260,7 +260,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
         }
         break;
       }
-      case _VideoSheetStatus.Closed: {
+      case VideoSheetStatus.Closed: {
         break;
       }
     }
@@ -271,12 +271,12 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     if (animation.isAnimating) return false;
     double topHeight = widget.maxHeight - widget.barSize - widget.bottomHeight;
     switch (status) {
-      case _VideoSheetStatus.Mini: {
+      case VideoSheetStatus.Mini: {
         if (top < topHeight - 200 || velocity > 200) {
           from = top;
           to = 0;
           setState(() {
-            status = _VideoSheetStatus.Fullscreen;
+            status = VideoSheetStatus.Fullscreen;
           });
           animation.forward(from: 0).then((value) {
             from = to = top;
@@ -287,7 +287,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
           animation.forward(from: 0).then((value) {
             from = to = top;
             setState(() {
-              status = _VideoSheetStatus.Closed;
+              status = VideoSheetStatus.Closed;
             });
           });
         } else {
@@ -299,12 +299,12 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
         }
         return false;
       }
-      case _VideoSheetStatus.Fullscreen: {
+      case VideoSheetStatus.Fullscreen: {
         if (top > 200 || (velocity < -200 && top > 20)) {
           from = top;
           to = topHeight;
           setState(() {
-            status = _VideoSheetStatus.Mini;
+            status = VideoSheetStatus.Mini;
           });
           animation.forward(from: 0).then((value) {
             from = to = top;
@@ -320,7 +320,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
         }
         break;
       }
-      case _VideoSheetStatus.Closed: {
+      case VideoSheetStatus.Closed: {
         break;
       }
     }
@@ -332,7 +332,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     from = top;
     to = 0;
     setState(() {
-      status = _VideoSheetStatus.Fullscreen;
+      status = VideoSheetStatus.Fullscreen;
     });
     animation.forward(from: 0).then((value) {
       from = to = top;
@@ -352,7 +352,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     animation.forward(from: 0).then((value) {
       from = to = top;
       setState(() {
-        status = _VideoSheetStatus.Closed;
+        status = VideoSheetStatus.Closed;
         _videoInfo = null;
       });
     });
@@ -363,7 +363,7 @@ class VideoSheetState extends State<VideoSheet> with SingleTickerProviderStateMi
     from = top;
     to = topHeight;
     setState(() {
-      status = _VideoSheetStatus.Mini;
+      status = VideoSheetStatus.Mini;
     });
     animation.forward(from: 0).then((value) {
       from = to = top;

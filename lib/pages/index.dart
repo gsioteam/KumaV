@@ -39,6 +39,7 @@ class _IndexState extends State<Index> {
   void Function()? onRefresh;
   void Function()? onFetch;
   GlobalKey<VideoSheetState> _videoKey = GlobalKey();
+  GlobalKey<NavigatorState> _navigatorKey = GlobalKey();
 
   bool hasMainProject() {
     // return Project.getMainProject() != null;
@@ -86,6 +87,7 @@ class _IndexState extends State<Index> {
             children: [
               Positioned.fill(
                 child: Navigator(
+                  key: _navigatorKey,
                   initialRoute: _initPage,
                   onGenerateRoute: (settings) {
                     if (settings.name == _initPage) {
@@ -143,6 +145,22 @@ class _IndexState extends State<Index> {
           ),
         ),
         onWillPop: () async {
+          switch (_videoKey.currentState?.status) {
+            case VideoSheetStatus.Fullscreen: {
+              _videoKey.currentState?.minify();
+              return false;
+            }
+            default: {
+              if (_navigatorKey.currentState?.canPop() == true) {
+                _navigatorKey.currentState?.pop();
+                return false;
+              }
+            }
+          }
+          if (_videoKey.currentState?.status == VideoSheetStatus.Mini) {
+            _videoKey.currentState?.close();
+            return false;
+          }
           return true;
         }
     );

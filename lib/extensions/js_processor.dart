@@ -151,32 +151,32 @@ class Processor extends ValueNotifier<ProcessorValue> {
 
   void setValue(JsValue jsValue) {
     value = value.copyWithData(jsValue);
-  }
+    }
 
-  Future<dynamic> loadCache(Plugin plugin) async {
-    var data = await _cacheRecord.record(value.key).get(plugin.database);
-    if (data != null)
-      value = value.copyWithMap(data["data"]);
-    return data;
-  }
+    Future<dynamic> loadCache(Plugin plugin) async {
+      var data = await _cacheRecord.record(value.key).get(plugin.database);
+      if (data != null)
+        value = value.copyWithMap(data["data"]);
+      return data;
+    }
 
-  Future<void> saveCache(Plugin plugin, Map data) async {
-    data["data"] = value.toData();
-    await _cacheRecord.record(value.key).put(
-      plugin.database,
-      data,
-      merge: true,
-    );
-  }
+    Future<void> saveCache(Plugin plugin, Map data) async {
+      data["data"] = value.toData();
+      await _cacheRecord.record(value.key).put(
+        plugin.database,
+        data,
+        merge: true,
+      );
+    }
 
-  String relativePath(String src) => path.normalize(path.join(source, '..', src));
+    String relativePath(String src) => path.normalize(path.join(source, '..', src));
 
-  String? loadString(String src) {
-    String path = relativePath(src);
-    if (path[0] != '/')
-      path = "/$path";
-    return script.fileSystems.loadCode(path);
-  }
+    String? loadString(String src) {
+      String path = relativePath(src);
+      if (path[0] != '/')
+        path = "/$path";
+      return script.fileSystems.loadCode(path);
+    }
 }
 
 ClassInfo processorClass = ClassInfo<Processor>(

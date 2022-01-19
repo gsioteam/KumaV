@@ -55,7 +55,7 @@ const double MinWidth = 120;
 
 class _VideoPlayerState extends State<VideoPlayer> {
 
-  neo.VideoPlayerController? controller;
+  ValueNotifier<neo.VideoPlayerController?> videoController = ValueNotifier(null);
   ProxyItem? proxyItem;
 
   @override
@@ -134,15 +134,15 @@ class _VideoPlayerState extends State<VideoPlayer> {
                                     },
                                   ),
                                 ),
-                                if (controller != null) ValueListenableBuilder<neo.VideoPlayerValue>(
-                                  valueListenable: controller!,
+                                if (videoController.value != null) ValueListenableBuilder<neo.VideoPlayerValue>(
+                                  valueListenable: videoController.value!,
                                   builder: (context, value, child) {
                                     return IconButton(
                                       onPressed: () {
                                         if (value.isPlaying) {
-                                          controller!.pause();
+                                          videoController.value!.pause();
                                         } else {
-                                          controller!.play();
+                                          videoController.value!.play();
                                         }
                                       },
                                       icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
@@ -190,7 +190,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
                 }
               },
               child: VideoInner(
-                controller: controller,
+                controller: videoController.value,
                 onTap: () {
                   VideoSheetOpenNotification().dispatch(context);
                 },
@@ -202,7 +202,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
                 return IgnorePointer(
                   ignoring: value.top > padding.top,
                   child: Opacity(
-                      opacity: math.min(1, math.max(0, (1 - value.top / padding.top))),
+                      opacity: math.min(1, math.max(0, (1 - (padding.top == 0 ? 0 : (value.top / padding.top))))),
                       child: child!
                   )
                 );
@@ -212,13 +212,13 @@ class _VideoPlayerState extends State<VideoPlayer> {
                   top: padding.top,
                 ),
                 child: VideoController(
-                  controller: controller,
+                  controller: videoController.value,
                   proxyItem: proxyItem,
                   resolutions: widget.resolutions,
                   currentSelect: widget.currentSelect,
                   onSelectResolution: widget.onSelectResolution,
                   onReload: _onReload,
-                  fullscreen: false,
+                  fullscreenController: videoController,
                 ),
               ),
             )
@@ -250,16 +250,16 @@ class _VideoPlayerState extends State<VideoPlayer> {
   }
 
   void _enableVideo() {
-    controller = neo.VideoPlayerController.network(
+    videoController.value = neo.VideoPlayerController.network(
       proxyItem!.localServerUri.toString(),
     );
-    controller!.initialize().then((value) => controller!.play());
+    videoController.value!.initialize().then((value) => videoController.value!.play());
 
     // controller = neo.VideoPlayerController(
     //   proxyItem!.localServerUri,
     // );
     // controller!.play();
-    controller!.addListener(_update);
+    videoController.value!.addListener(_update);
   }
 
   @override
@@ -270,7 +270,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   }
 
   void _clearVideo() async {
-    controller?.dispose();
+    videoController.value?.dispose();
   }
 
   void _update() {
@@ -280,16 +280,16 @@ class _VideoPlayerState extends State<VideoPlayer> {
 //    }
   }
 
-  void _onReload() async {
-    if (controller != null) {
+  Future<void> _onReload() async {
+    if (videoController.value != null) {
       setState(() {
-        controller?.dispose();
-        controller = null;
-      });
-      await Future.delayed(Duration(milliseconds: 100));
-      setState(() {
-        _enableVideo();
+        videoController.value?.dispose();
+        videoController.value = null;
       });
     }
+    await Future.delayed(Duration(milliseconds: 100));
+    setState(() {
+      _enableVideo();
+    });
   }
 }
